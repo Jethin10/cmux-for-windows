@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 import {
   ipcChannels,
   type AgentArchiveRequest,
+  type AgentHistoryRequest,
   type AgentLaunchRequest,
   type AgentListRequest,
   type AgentRestartRequest,
@@ -14,6 +15,8 @@ import {
   type TerminalResizeRequest,
   type TerminalSubscriptionRequest,
   type TerminalWriteRequest,
+  type TranscriptSearchRequest,
+  type TranscriptSearchResult,
   type WorkspaceOpenRequest,
 } from "@cmux/ipc";
 import type { AgentSession, TerminalSession, TerminalSessionId, Workspace } from "@cmux/shared";
@@ -26,10 +29,14 @@ export interface CmuxBridge {
   };
   agent: {
     list(request: AgentListRequest): Promise<AgentSession[]>;
+    history(request: AgentHistoryRequest): Promise<AgentSession[]>;
     launch(request: AgentLaunchRequest): Promise<AgentSession>;
     stop(request: AgentStopRequest): Promise<AgentSession>;
     restart(request: AgentRestartRequest): Promise<AgentSession>;
     archive(request: AgentArchiveRequest): Promise<AgentSession>;
+  };
+  transcript: {
+    search(request: TranscriptSearchRequest): Promise<TranscriptSearchResult[]>;
   };
   terminal: {
     create(request: TerminalCreateRequest): Promise<TerminalSession>;
@@ -56,6 +63,8 @@ const bridge: CmuxBridge = {
   agent: {
     list: (request) =>
       ipcRenderer.invoke(ipcChannels.agentList, request) as Promise<AgentSession[]>,
+    history: (request) =>
+      ipcRenderer.invoke(ipcChannels.agentHistory, request) as Promise<AgentSession[]>,
     launch: (request) =>
       ipcRenderer.invoke(ipcChannels.agentLaunch, request) as Promise<AgentSession>,
     stop: (request) => ipcRenderer.invoke(ipcChannels.agentStop, request) as Promise<AgentSession>,
@@ -63,6 +72,12 @@ const bridge: CmuxBridge = {
       ipcRenderer.invoke(ipcChannels.agentRestart, request) as Promise<AgentSession>,
     archive: (request) =>
       ipcRenderer.invoke(ipcChannels.agentArchive, request) as Promise<AgentSession>,
+  },
+  transcript: {
+    search: (request) =>
+      ipcRenderer.invoke(ipcChannels.transcriptSearch, request) as Promise<
+        TranscriptSearchResult[]
+      >,
   },
   terminal: {
     create: (request) =>

@@ -1,6 +1,7 @@
 import { StrictMode, useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { defaultTemplates } from "@cmux/core";
+import type { TranscriptSearchResult } from "@cmux/ipc";
 import type { AgentSession, Workspace } from "@cmux/shared";
 import { formatSessionBadge } from "@cmux/ui";
 import { TerminalSpike } from "./TerminalSpike.js";
@@ -12,6 +13,9 @@ function App() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | undefined>();
   const [agents, setAgents] = useState<AgentSession[]>([]);
+  const [history, setHistory] = useState<AgentSession[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchResults, setSearchResults] = useState<TranscriptSearchResult[]>([]);
   const [templateId, setTemplateId] = useState<string>(String(defaultTemplates[0]?.id ?? ""));
   const [agentTitle, setAgentTitle] = useState<string>("Pi in repo");
   const [prompt, setPrompt] = useState<string>("Review the repository and summarize next steps.");
@@ -45,10 +49,13 @@ function App() {
   }
 
   async function refreshAgents(workspaceId: string): Promise<void> {
-    const nextAgents = await window.cmux.agent.list({
-      workspaceId: workspaceId as Workspace["id"],
-    });
+    const workspaceIdValue = workspaceId as Workspace["id"];
+    const [nextAgents, nextHistory] = await Promise.all([
+      window.cmux.agent.list({ workspaceId: workspaceIdValue }),
+      window.cmux.agent.history({ workspaceId: workspaceIdValue }),
+    ]);
     setAgents(nextAgents);
+    setHistory(nextHistory);
   }
 
   async function runAction(action: () => Promise<void>): Promise<void> {
@@ -236,6 +243,65 @@ function App() {
             </li>
           ))}
           {agents.length === 0 ? <li>No sessions in this workspace.</li> : null}
+        </ul>
+      </section>
+
+      <section className="panel session-panel">
+        <div className="panel-heading">
+          <h2>Transcript search</h2>
+        </div>
+        <form
+          className="form-row"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!searchQuery.trim()) return;
+            void runAction(async () => {
+              const results = await window.cmux.transcript.search({
+                ...(activeWorkspace ? { workspaceId: activeWorkspace.id } : {}),
+                query: searchQuery,
+                limit: 50,
+              });
+              setSearchResults(results);
+            });
+          }}
+        >
+          <input
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            aria-label="Transcript search query"
+            placeholder="Search logs…"
+          />
+          <button disabled={busy || !searchQuery.trim()}>Search</button>
+        </form>
+        <ul className="session-list">
+          {searchResults.map((result) => (
+            <li key={`${result.terminalSessionId}-${result.sequence}`} className="session-card">
+              <div>
+                <strong>{result.createdAt}</strong>
+                <p>{result.excerpt}</p>
+              </div>
+            </li>
+          ))}
+          {searchResults.length === 0 ? <li>No transcript matches yet.</li> : null}
+        </ul>
+      </section>
+
+      <section className="panel session-panel">
+        <div className="panel-heading">
+          <h2>Session history</h2>
+        </div>
+        <ul className="session-list">
+          {history.map((agent) => (
+            <li key={agent.id} className="session-card">
+              <div>
+                <strong>
+                  {formatSessionBadge({ title: agent.title, status: agent.status, unreadCount: 0 })}
+                </strong>
+                <p>{agent.statusReason ?? agent.startedAt}</p>
+              </div>
+            </li>
+          ))}
+          {history.length === 0 ? <li>No session history yet.</li> : null}
         </ul>
       </section>
 

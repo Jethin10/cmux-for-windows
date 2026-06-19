@@ -1,6 +1,11 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 import {
   ipcChannels,
+  type AgentArchiveRequest,
+  type AgentLaunchRequest,
+  type AgentListRequest,
+  type AgentRestartRequest,
+  type AgentStopRequest,
   type AppInfoResponse,
   type TerminalCloseRequest,
   type TerminalCreateRequest,
@@ -9,11 +14,23 @@ import {
   type TerminalResizeRequest,
   type TerminalSubscriptionRequest,
   type TerminalWriteRequest,
+  type WorkspaceOpenRequest,
 } from "@cmux/ipc";
-import type { TerminalSession, TerminalSessionId } from "@cmux/shared";
+import type { AgentSession, TerminalSession, TerminalSessionId, Workspace } from "@cmux/shared";
 
 export interface CmuxBridge {
   appInfo(): Promise<AppInfoResponse>;
+  workspace: {
+    list(): Promise<Workspace[]>;
+    open(request: WorkspaceOpenRequest): Promise<Workspace>;
+  };
+  agent: {
+    list(request: AgentListRequest): Promise<AgentSession[]>;
+    launch(request: AgentLaunchRequest): Promise<AgentSession>;
+    stop(request: AgentStopRequest): Promise<AgentSession>;
+    restart(request: AgentRestartRequest): Promise<AgentSession>;
+    archive(request: AgentArchiveRequest): Promise<AgentSession>;
+  };
   terminal: {
     create(request: TerminalCreateRequest): Promise<TerminalSession>;
     write(request: TerminalWriteRequest): Promise<void>;
@@ -32,6 +49,21 @@ export interface CmuxBridge {
 
 const bridge: CmuxBridge = {
   appInfo: () => ipcRenderer.invoke(ipcChannels.appInfo) as Promise<AppInfoResponse>,
+  workspace: {
+    list: () => ipcRenderer.invoke(ipcChannels.workspaceList) as Promise<Workspace[]>,
+    open: (request) => ipcRenderer.invoke(ipcChannels.workspaceOpen, request) as Promise<Workspace>,
+  },
+  agent: {
+    list: (request) =>
+      ipcRenderer.invoke(ipcChannels.agentList, request) as Promise<AgentSession[]>,
+    launch: (request) =>
+      ipcRenderer.invoke(ipcChannels.agentLaunch, request) as Promise<AgentSession>,
+    stop: (request) => ipcRenderer.invoke(ipcChannels.agentStop, request) as Promise<AgentSession>,
+    restart: (request) =>
+      ipcRenderer.invoke(ipcChannels.agentRestart, request) as Promise<AgentSession>,
+    archive: (request) =>
+      ipcRenderer.invoke(ipcChannels.agentArchive, request) as Promise<AgentSession>,
+  },
   terminal: {
     create: (request) =>
       ipcRenderer.invoke(ipcChannels.terminalCreate, request) as Promise<TerminalSession>,

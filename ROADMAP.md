@@ -26,12 +26,14 @@ Status: **in progress; manual Windows/native packaging gates not passed yet**
 
 ## Phase 2: Agent Session Supervisor MVP Core
 
-- Workspace creation/open folder.
-- AgentSession model.
-- TemplateService with initial agent templates.
-- Launch named agent sessions in workspace.
-- Session list/dashboard.
-- Stop/restart/archive controls.
+Status: **started with in-memory desktop supervisor**
+
+- Workspace creation/open folder. Started via typed IPC and dashboard controls.
+- AgentSession model. Started in backend-owned `SupervisorService` state.
+- TemplateService with initial agent templates. Implemented with default templates from `@cmux/core`.
+- Launch named agent sessions in workspace. Started by rendering templates into backend-owned terminal launches.
+- Session list/dashboard. Started in the Electron renderer.
+- Stop/restart/archive controls. Started through secure IPC and backend state transitions.
 
 ## Phase 3: Persistent Logs, Search, and Recovery
 

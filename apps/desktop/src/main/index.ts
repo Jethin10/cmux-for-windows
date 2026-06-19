@@ -2,12 +2,15 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ipcChannels, type AppInfoResponse } from "@cmux/ipc";
+import { registerSupervisorIpc } from "./supervisor-ipc.js";
+import { SupervisorService } from "./supervisor-service.js";
 import { registerTerminalIpc } from "./terminal-ipc.js";
 import { TerminalService } from "./terminal-service.js";
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 let terminalServicePromise: Promise<TerminalService> | undefined;
 let terminalService: TerminalService | undefined;
+let supervisorServicePromise: Promise<SupervisorService> | undefined;
 
 function getTerminalService(): Promise<TerminalService> {
   terminalServicePromise ??= TerminalService.create().then((service) => {
@@ -15,6 +18,11 @@ function getTerminalService(): Promise<TerminalService> {
     return service;
   });
   return terminalServicePromise;
+}
+
+function getSupervisorService(): Promise<SupervisorService> {
+  supervisorServicePromise ??= SupervisorService.create(getTerminalService);
+  return supervisorServicePromise;
 }
 
 function createWindow(): BrowserWindow {
@@ -47,6 +55,7 @@ ipcMain.handle(ipcChannels.appInfo, (): AppInfoResponse => {
 });
 
 registerTerminalIpc(ipcMain, getTerminalService);
+registerSupervisorIpc(ipcMain, getSupervisorService);
 
 void app.whenReady().then(() => {
   createWindow();

@@ -29,6 +29,17 @@ export interface TerminalServiceOptions {
   resolveProfile?: (profileId: string | undefined) => ShellProfile;
 }
 
+export interface CreateProcessTerminalRequest {
+  profileId: string;
+  command: string;
+  args: readonly string[];
+  cwd: string;
+  cols: number;
+  rows: number;
+  workspaceId: WorkspaceId;
+  agentSessionId?: string;
+}
+
 export class TerminalService {
   private readonly defaultCwd: string;
   private readonly workspaceId: WorkspaceId;
@@ -51,7 +62,7 @@ export class TerminalService {
 
   async createTerminal(request: TerminalCreateRequest): Promise<TerminalSession> {
     const profile = this.resolveProfile(request.profileId);
-    const session = await this.broker.createTerminal({
+    return this.createProcessTerminal({
       profileId: profile.profileId,
       command: profile.command,
       args: profile.args,
@@ -60,6 +71,10 @@ export class TerminalService {
       rows: request.rows,
       workspaceId: this.workspaceId,
     });
+  }
+
+  async createProcessTerminal(request: CreateProcessTerminalRequest): Promise<TerminalSession> {
+    const session = await this.broker.createTerminal(request);
     this.terminalIds.add(session.id);
     const lifecycleSubscription = this.broker.subscribeExit(session.id, () => {
       this.terminalIds.delete(session.id);

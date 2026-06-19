@@ -16,6 +16,8 @@ export const ipcChannels = {
   agentList: `${IPC_NAMESPACE}:agent:list`,
   agentLaunch: `${IPC_NAMESPACE}:agent:launch`,
   agentStop: `${IPC_NAMESPACE}:agent:stop`,
+  agentRestart: `${IPC_NAMESPACE}:agent:restart`,
+  agentArchive: `${IPC_NAMESPACE}:agent:archive`,
   terminalCreate: `${IPC_NAMESPACE}:terminal:create`,
   terminalWrite: `${IPC_NAMESPACE}:terminal:write`,
   terminalResize: `${IPC_NAMESPACE}:terminal:resize`,
@@ -55,6 +57,14 @@ export interface AgentLaunchRequest {
 export interface AgentStopRequest {
   agentSessionId: AgentSessionId;
   mode: "interrupt" | "terminate" | "kill-process-tree";
+}
+
+export interface AgentRestartRequest {
+  agentSessionId: AgentSessionId;
+}
+
+export interface AgentArchiveRequest {
+  agentSessionId: AgentSessionId;
 }
 
 export type TerminalCloseMode = "interrupt" | "terminate" | "kill-process-tree" | "detach";
@@ -105,6 +115,8 @@ export interface IpcContracts {
   [ipcChannels.agentList]: { request: AgentListRequest; response: AgentSession[] };
   [ipcChannels.agentLaunch]: { request: AgentLaunchRequest; response: AgentSession };
   [ipcChannels.agentStop]: { request: AgentStopRequest; response: AgentSession };
+  [ipcChannels.agentRestart]: { request: AgentRestartRequest; response: AgentSession };
+  [ipcChannels.agentArchive]: { request: AgentArchiveRequest; response: AgentSession };
   [ipcChannels.terminalCreate]: { request: TerminalCreateRequest; response: TerminalSession };
   [ipcChannels.terminalWrite]: { request: TerminalWriteRequest; response: void };
   [ipcChannels.terminalResize]: { request: TerminalResizeRequest; response: void };
@@ -133,6 +145,48 @@ export function assertWorkspaceOpenRequest(value: unknown): asserts value is Wor
   }
   if (typeof candidate.trusted !== "boolean")
     throw new Error("workspace.open trusted must be boolean");
+}
+
+export function assertAgentListRequest(value: unknown): asserts value is AgentListRequest {
+  if (!isRecord(value)) throw new Error("agent.list request must be an object");
+  const candidate = value as Partial<AgentListRequest>;
+  assertWorkspaceId(candidate.workspaceId, "agent.list workspaceId");
+}
+
+export function assertAgentLaunchRequest(value: unknown): asserts value is AgentLaunchRequest {
+  if (!isRecord(value)) throw new Error("agent.launch request must be an object");
+  const candidate = value as Partial<AgentLaunchRequest>;
+  assertWorkspaceId(candidate.workspaceId, "agent.launch workspaceId");
+  assertNonEmptyString(candidate.templateId, "agent.launch templateId");
+  assertNonEmptyString(candidate.title, "agent.launch title");
+  if (candidate.prompt !== undefined && typeof candidate.prompt !== "string") {
+    throw new Error("agent.launch prompt must be a string");
+  }
+}
+
+export function assertAgentStopRequest(value: unknown): asserts value is AgentStopRequest {
+  if (!isRecord(value)) throw new Error("agent.stop request must be an object");
+  const candidate = value as Partial<AgentStopRequest>;
+  assertAgentSessionId(candidate.agentSessionId, "agent.stop agentSessionId");
+  if (
+    candidate.mode !== "interrupt" &&
+    candidate.mode !== "terminate" &&
+    candidate.mode !== "kill-process-tree"
+  ) {
+    throw new Error("agent.stop mode is invalid");
+  }
+}
+
+export function assertAgentRestartRequest(value: unknown): asserts value is AgentRestartRequest {
+  if (!isRecord(value)) throw new Error("agent.restart request must be an object");
+  const candidate = value as Partial<AgentRestartRequest>;
+  assertAgentSessionId(candidate.agentSessionId, "agent.restart agentSessionId");
+}
+
+export function assertAgentArchiveRequest(value: unknown): asserts value is AgentArchiveRequest {
+  if (!isRecord(value)) throw new Error("agent.archive request must be an object");
+  const candidate = value as Partial<AgentArchiveRequest>;
+  assertAgentSessionId(candidate.agentSessionId, "agent.archive agentSessionId");
 }
 
 export function assertTerminalCreateRequest(
@@ -193,6 +247,14 @@ export function assertTerminalSubscriptionRequest(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function assertWorkspaceId(value: unknown, label: string): asserts value is WorkspaceId {
+  assertNonEmptyString(value, label);
+}
+
+function assertAgentSessionId(value: unknown, label: string): asserts value is AgentSessionId {
+  assertNonEmptyString(value, label);
 }
 
 function assertTerminalSessionId(

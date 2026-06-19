@@ -1,11 +1,18 @@
 import { appendFile, mkdir, readFile, readdir, rename, stat, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import type { AgentSession, TerminalSessionId, Workspace, WorkspaceId } from "@cmux/shared";
+import type {
+  AgentSession,
+  Notification,
+  TerminalSessionId,
+  Workspace,
+  WorkspaceId,
+} from "@cmux/shared";
 import type { TranscriptSearchResult } from "@cmux/ipc";
 
 export interface SupervisorSnapshot {
   workspaces: Workspace[];
   agents: AgentSession[];
+  notifications?: Notification[];
 }
 
 export interface TranscriptRecord {
@@ -59,6 +66,9 @@ export class FileSupervisorStore implements SupervisorStore {
       return {
         workspaces: Array.isArray(parsed.workspaces) ? (parsed.workspaces as Workspace[]) : [],
         agents: Array.isArray(parsed.agents) ? (parsed.agents as AgentSession[]) : [],
+        notifications: Array.isArray(parsed.notifications)
+          ? (parsed.notifications as Notification[])
+          : [],
       };
     } catch (error) {
       if (isNodeError(error) && error.code === "ENOENT") return { workspaces: [], agents: [] };
@@ -70,6 +80,7 @@ export class FileSupervisorStore implements SupervisorStore {
     const snapshotCopy: SupervisorSnapshot = {
       workspaces: snapshot.workspaces.map((workspace) => ({ ...workspace })),
       agents: snapshot.agents.map((agent) => ({ ...agent })),
+      notifications: snapshot.notifications?.map((notification) => ({ ...notification })) ?? [],
     };
     this.saveQueue = this.saveQueue.then(
       () => this.writeSnapshot(snapshotCopy),

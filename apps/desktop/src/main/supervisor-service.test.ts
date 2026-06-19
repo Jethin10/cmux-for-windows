@@ -123,6 +123,10 @@ describe("SupervisorService", () => {
       data: "Approve? yes/no",
     });
     expect(service.listAgents(workspace.id)[0]).toMatchObject({ status: "waiting" });
+    const waitingNotification = service.listNotifications(workspace.id)[0]!;
+    expect(waitingNotification).toMatchObject({ title: "Pi in repo waiting", read: false });
+    expect(service.nextUnreadAgent(workspace.id)).toMatchObject({ id: agent.id });
+    expect(service.markNotificationRead(waitingNotification.id)).toMatchObject({ read: true });
 
     terminalService.outputHandlers.get(agent.terminalSessionId!)!({
       terminalSessionId: agent.terminalSessionId!,

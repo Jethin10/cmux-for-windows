@@ -9,6 +9,8 @@ import {
 import type {
   AgentSession,
   AgentSessionId,
+  Notification as CmuxNotification,
+  NotificationId,
   Template,
   TemplateId,
   TerminalSessionId,
@@ -25,6 +27,7 @@ import type {
   WorkspaceOpenRequest,
 } from "@cmux/ipc";
 import type { TerminalExitEvent, TerminalOutputEvent, TerminalSubscription } from "@cmux/pty";
+import type { DesktopNotificationService } from "./desktop-notification-service.js";
 import type { SupervisorStore } from "./persistent-store.js";
 import type { CreateProcessTerminalRequest, TerminalService } from "./terminal-service.js";
 
@@ -62,6 +65,7 @@ export class SupervisorService {
   private readonly workspaces = new Map<WorkspaceId, Workspace>();
   private readonly workspacesByRoot = new Map<string, WorkspaceId>();
   private readonly agents = new Map<AgentSessionId, AgentSession>();
+  private readonly notifications = new Map<NotificationId, CmuxNotification>();
   private readonly runtimes = new Map<AgentSessionId, AgentRuntime>();
   private readonly templates: readonly Template[];
 
@@ -69,6 +73,7 @@ export class SupervisorService {
     private readonly terminalService: SupervisorTerminalService,
     templates: readonly Template[] = defaultTemplates,
     private readonly store?: SupervisorStore,
+    private readonly notifier?: DesktopNotificationService,
   ) {
     this.templates = templates;
   }
@@ -76,8 +81,14 @@ export class SupervisorService {
   static async create(
     getTerminalService: () => Promise<TerminalService>,
     store?: SupervisorStore,
+    notifier?: DesktopNotificationService,
   ): Promise<SupervisorService> {
-    const service = new SupervisorService(await getTerminalService(), defaultTemplates, store);
+    const service = new SupervisorService(
+      await getTerminalService(),
+      defaultTemplates,
+      store,
+      notifier,
+    );
     await service.restore();
     return service;
   }
@@ -88,11 +99,15 @@ export class SupervisorService {
     this.workspaces.clear();
     this.workspacesByRoot.clear();
     this.agents.clear();
+    this.notifications.clear();
     for (const workspace of snapshot.workspaces) {
       this.workspaces.set(workspace.id, workspace);
       this.workspacesByRoot.set(normalizeRootPath(workspace.rootPath), workspace.id);
     }
     for (const agent of snapshot.agents) this.agents.set(agent.id, agent);
+    for (const notification of snapshot.notifications ?? []) {
+      this.notifications.set(notification.id, notification);
+    }
   }
 
   listWorkspaces(): Workspace[] {
@@ -147,6 +162,34 @@ export class SupervisorService {
       ...(request.workspaceId ? { workspaceId: request.workspaceId } : {}),
       ...(request.limit ? { limit: request.limit } : {}),
     });
+  }
+
+  listNotifications(workspaceId: WorkspaceId): CmuxNotification[] {
+    this.requireWorkspace(workspaceId);
+    return [...this.notifications.values()]
+      .filter((notification) => notification.workspaceId === workspaceId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  markNotificationRead(notificationId: NotificationId): CmuxNotification {
+    const notification = this.notifications.get(notificationId);
+    if (!notification) throw new Error(`Unknown notification: ${notificationId}`);
+    if (notification.read) return notification;
+    const updated = { ...notification, read: true };
+    this.notifications.set(notificationId, updated);
+    const workspace = this.requireWorkspace(notification.workspaceId);
+    this.updateWorkspace(workspace.id, {
+      unreadCount: Math.max(0, workspace.unreadCount - 1),
+      updatedAt: nowIso(),
+    });
+    return updated;
+  }
+
+  nextUnreadAgent(workspaceId: WorkspaceId): AgentSession | undefined {
+    this.requireWorkspace(workspaceId);
+    const notification = this.listNotifications(workspaceId).find((candidate) => !candidate.read);
+    if (!notification?.agentSessionId) return undefined;
+    return this.agents.get(notification.agentSessionId);
   }
 
   async launchAgent(request: AgentLaunchRequest): Promise<AgentSession> {
@@ -307,6 +350,13 @@ export class SupervisorService {
           })
           .catch((error: unknown) => console.error("Failed to persist transcript output", error));
         const detection = detectAgentAttention(event.data);
+        if (detection.status !== "running" && current.status !== detection.status) {
+          this.createAttentionNotification(
+            current,
+            detection.status,
+            detection.reason ?? event.data,
+          );
+        }
         this.updateAgent(agentId, {
           status: detection.status,
           ...(detection.reason ? { statusReason: detection.reason } : {}),
@@ -324,8 +374,13 @@ export class SupervisorService {
         }
         const now = nowIso();
         this.disposeAgentRuntime(agentId);
+        const status =
+          event.exitCode === 0 || event.exitCode === undefined ? "completed" : "failed";
+        if (status === "failed") {
+          this.createAttentionNotification(current, "failed", `Exited with ${event.exitCode}`);
+        }
         this.updateAgent(agentId, {
-          status: event.exitCode === 0 || event.exitCode === undefined ? "completed" : "failed",
+          status,
           ...(event.exitCode === undefined
             ? {}
             : { statusReason: `Exited with ${event.exitCode}` }),
@@ -365,6 +420,34 @@ export class SupervisorService {
     return template;
   }
 
+  private createAttentionNotification(
+    agent: AgentSession,
+    status: Extract<AgentSession["status"], "waiting" | "needs-attention" | "failed">,
+    reason: string,
+  ): CmuxNotification {
+    const notification: CmuxNotification = {
+      id: randomUUID() as NotificationId,
+      workspaceId: agent.workspaceId,
+      agentSessionId: agent.id,
+      ...(agent.terminalSessionId ? { terminalSessionId: agent.terminalSessionId } : {}),
+      severity: status === "failed" ? "error" : "attention",
+      title: `${agent.title} ${status}`,
+      body: reason.slice(0, 240),
+      read: false,
+      source: "heuristic",
+      createdAt: nowIso(),
+    };
+    this.notifications.set(notification.id, notification);
+    const workspace = this.requireWorkspace(agent.workspaceId);
+    this.updateWorkspace(workspace.id, {
+      unreadCount: workspace.unreadCount + 1,
+      updatedAt: notification.createdAt,
+    });
+    this.updateAgent(agent.id, { lastNotificationId: notification.id });
+    this.notifier?.show(notification);
+    return notification;
+  }
+
   private updateWorkspace(workspaceId: WorkspaceId, patch: Partial<Workspace>): Workspace {
     const updated = { ...this.requireWorkspace(workspaceId), ...patch };
     this.workspaces.set(workspaceId, updated);
@@ -389,6 +472,7 @@ export class SupervisorService {
       await this.store.saveSnapshot({
         workspaces: [...this.workspaces.values()],
         agents: [...this.agents.values()],
+        notifications: [...this.notifications.values()],
       });
     } catch (error) {
       console.error("Failed to persist supervisor snapshot", error);

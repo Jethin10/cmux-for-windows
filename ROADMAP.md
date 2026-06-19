@@ -46,9 +46,11 @@ Status: **started with file-backed desktop persistence**
 
 ## Phase 4: Notifications and Attention Routing
 
-- Notification service.
-- Unread badges and attention highlighting.
-- Jump-to-next-waiting/unread.
-- Windows toast notifications.
+Status: **started with heuristic notifications**
+
+- Notification service. Started in `SupervisorService` with desktop toast adapter.
+- Unread badges and attention highlighting. Started with workspace unread counts and notification list UI.
+- Jump-to-next-waiting/unread. Started with next unread IPC/UI action.
+- Windows toast notifications. Started through Electron desktop notifications for attention/error events.
 
 ## Phase 5+: Multi-agent task launch, panes, CLI/API, Git workflow, approvals, browser surfaces, release hardening.

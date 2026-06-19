@@ -2,7 +2,7 @@ import { StrictMode, useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { defaultTemplates } from "@cmux/core";
 import type { TranscriptSearchResult } from "@cmux/ipc";
-import type { AgentSession, Workspace } from "@cmux/shared";
+import type { AgentSession, Notification, Workspace } from "@cmux/shared";
 import { formatSessionBadge } from "@cmux/ui";
 import { TerminalSpike } from "./TerminalSpike.js";
 import "./styles.css";
@@ -16,6 +16,7 @@ function App() {
   const [history, setHistory] = useState<AgentSession[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchResults, setSearchResults] = useState<TranscriptSearchResult[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [templateId, setTemplateId] = useState<string>(String(defaultTemplates[0]?.id ?? ""));
   const [agentTitle, setAgentTitle] = useState<string>("Pi in repo");
   const [prompt, setPrompt] = useState<string>("Review the repository and summarize next steps.");
@@ -56,6 +57,7 @@ function App() {
     ]);
     setAgents(nextAgents);
     setHistory(nextHistory);
+    setNotifications(await window.cmux.notification.list({ workspaceId: workspaceIdValue }));
   }
 
   async function runAction(action: () => Promise<void>): Promise<void> {
@@ -115,7 +117,11 @@ function App() {
               className={workspace.id === activeWorkspaceId ? "workspace active" : "workspace"}
               onClick={() => setActiveWorkspaceId(workspace.id)}
             >
-              <strong>{workspace.name}</strong>
+              <strong>
+                {workspace.unreadCount > 0
+                  ? `${workspace.name} (${workspace.unreadCount})`
+                  : workspace.name}
+              </strong>
               <span>{workspace.rootPath}</span>
             </button>
           ))}
@@ -243,6 +249,52 @@ function App() {
             </li>
           ))}
           {agents.length === 0 ? <li>No sessions in this workspace.</li> : null}
+        </ul>
+      </section>
+
+      <section className="panel session-panel">
+        <div className="panel-heading">
+          <h2>Notifications</h2>
+          <button
+            disabled={!activeWorkspace}
+            onClick={() =>
+              activeWorkspace &&
+              void runAction(async () => {
+                const nextAgent = await window.cmux.notification.nextUnread({
+                  workspaceId: activeWorkspace.id,
+                });
+                if (nextAgent)
+                  setAgents((current) => [
+                    nextAgent,
+                    ...current.filter((agent) => agent.id !== nextAgent.id),
+                  ]);
+              })
+            }
+          >
+            Jump to next unread
+          </button>
+        </div>
+        <ul className="session-list">
+          {notifications.map((notification) => (
+            <li key={notification.id} className="session-card">
+              <div>
+                <strong>{notification.title}</strong>
+                <p>{notification.body}</p>
+              </div>
+              <button
+                disabled={notification.read}
+                onClick={() =>
+                  void runAction(async () => {
+                    await window.cmux.notification.markRead({ notificationId: notification.id });
+                    if (activeWorkspace) await refreshAgents(activeWorkspace.id);
+                  })
+                }
+              >
+                {notification.read ? "Read" : "Mark read"}
+              </button>
+            </li>
+          ))}
+          {notifications.length === 0 ? <li>No notifications yet.</li> : null}
         </ul>
       </section>
 

@@ -6,6 +6,9 @@ import {
   assertAgentListRequest,
   assertAgentRestartRequest,
   assertAgentStopRequest,
+  assertNotificationListRequest,
+  assertNotificationMarkReadRequest,
+  assertNotificationNextUnreadRequest,
   assertTranscriptSearchRequest,
   assertWorkspaceOpenRequest,
 } from "./index.js";
@@ -31,6 +34,11 @@ describe("workspace and agent IPC request validation", () => {
     expect(() =>
       assertTranscriptSearchRequest({ workspaceId: "workspace-1", query: "failed", limit: 20 }),
     ).not.toThrow();
+    expect(() => assertNotificationListRequest({ workspaceId: "workspace-1" })).not.toThrow();
+    expect(() =>
+      assertNotificationMarkReadRequest({ notificationId: "notification-1" }),
+    ).not.toThrow();
+    expect(() => assertNotificationNextUnreadRequest({ workspaceId: "workspace-1" })).not.toThrow();
   });
 
   it("rejects malformed agent payloads", () => {
@@ -44,5 +52,8 @@ describe("workspace and agent IPC request validation", () => {
     );
     expect(() => assertTranscriptSearchRequest({ query: "" })).toThrow(/query/);
     expect(() => assertTranscriptSearchRequest({ query: "failed", limit: 500 })).toThrow(/limit/);
+    expect(() => assertNotificationMarkReadRequest({ notificationId: "" })).toThrow(
+      /notificationId/,
+    );
   });
 });

@@ -7,5 +7,13 @@ export default defineConfig({
   build: {
     outDir: "../../dist/renderer",
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ["react", "react-dom"],
+          xterm: ["@xterm/xterm", "@xterm/addon-fit"],
+        },
+      },
+    },
   },
 });

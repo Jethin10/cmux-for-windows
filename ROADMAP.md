@@ -54,3 +54,10 @@ Status: **started with heuristic notifications**
 - Windows toast notifications. Started through Electron desktop notifications for attention/error events.
 
 ## Phase 5+: Multi-agent task launch, panes, CLI/API, Git workflow, approvals, browser surfaces, release hardening.
+
+Status: **started with panes/surfaces foundation**
+
+- Pane/surface model. Started with core pane layout helpers and tests.
+- Agent terminal surfaces. Started with an attachable live xterm.js surface for selected agent sessions.
+- Multi-pane dashboard. Started with a local shell pane beside an agent session pane.
+- Renderer bundle hardening. Started with Vite manual chunks for React and xterm.

@@ -119,7 +119,7 @@ Still required before Phase 4 can be considered complete:
 
 ### Phase 5+ — Panes/surfaces and release hardening foundation
 
-Status: **started with panes/surfaces foundation**
+Status: **started with panes/surfaces and CLI/API foundations**
 
 Implemented:
 
@@ -127,12 +127,13 @@ Implemented:
 - attachable live xterm.js agent terminal surface
 - two-pane dashboard area with local shell spike and selected agent session pane
 - Vite manual chunks for React and xterm renderer bundle splitting
+- typed CLI command envelopes for workspace open, agent list/launch/stop
 
 Still required:
 
 - persisted backend-owned pane layouts
 - multi-agent batch launch workflows
-- CLI/API entrypoints beyond the placeholder package
+- desktop bridge or named-pipe transport for executing CLI envelopes
 - Git workflow/approval/browser surfaces
 - packaged installer/release hardening
 

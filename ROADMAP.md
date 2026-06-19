@@ -55,9 +55,10 @@ Status: **started with heuristic notifications**
 
 ## Phase 5+: Multi-agent task launch, panes, CLI/API, Git workflow, approvals, browser surfaces, release hardening.
 
-Status: **started with panes/surfaces foundation**
+Status: **started with panes/surfaces and CLI/API foundations**
 
 - Pane/surface model. Started with core pane layout helpers and tests.
 - Agent terminal surfaces. Started with an attachable live xterm.js surface for selected agent sessions.
 - Multi-pane dashboard. Started with a local shell pane beside an agent session pane.
 - Renderer bundle hardening. Started with Vite manual chunks for React and xterm.
+- CLI/API entrypoint. Started with typed CLI command envelopes for workspace and agent operations.

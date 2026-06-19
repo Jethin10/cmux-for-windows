@@ -59,6 +59,26 @@ Implemented:
 - preload bridge methods for terminal IPC without exposing PTY/process handles
 - PTY spike docs and manual validation checklist
 
+### Phase 2 — Agent Session Supervisor MVP Core
+
+Status: **started with in-memory desktop supervisor**
+
+Implemented:
+
+- backend-owned `SupervisorService` for workspaces and agent session state
+- secure workspace and agent IPC handlers/validators
+- workspace open/list dashboard
+- launch named sessions from default templates
+- stop/restart/archive session controls
+- status updates from PTY output heuristics and terminal exit events
+
+Still required before Phase 2 can be considered complete:
+
+- persist workspace/session metadata after restart
+- attach session-specific transcript/terminal views instead of only the standalone PTY spike surface
+- improve restart semantics for long-running shells and missing CLIs
+- add richer session filtering/attention routing
+
 Still required before Phase 1 can be considered passed:
 
 - approve/build native `node-pty` locally

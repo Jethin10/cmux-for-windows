@@ -128,13 +128,15 @@ Implemented:
 - two-pane dashboard area with local shell spike and selected agent session pane
 - Vite manual chunks for React and xterm renderer bundle splitting
 - typed CLI command envelopes for workspace open, agent list/launch/stop
+- approval request model/risk inference foundation
+- Git porcelain v2 status parsing and summary formatting foundation
 
 Still required:
 
 - persisted backend-owned pane layouts
 - multi-agent batch launch workflows
 - desktop bridge or named-pipe transport for executing CLI envelopes
-- Git workflow/approval/browser surfaces
+- UI and IPC surfaces for Git workflow/approval/browser features
 - packaged installer/release hardening
 
 Still required before Phase 1 can be considered passed:

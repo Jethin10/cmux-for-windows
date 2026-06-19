@@ -4,7 +4,7 @@ CMux for Windows is a Windows-first command center for supervising multiple codi
 
 ## Status
 
-Phase 0 foundation is in progress. The repository currently contains the monorepo skeleton, security/architecture docs, typed domain packages, a minimal secure Electron shell, and migration/state-machine tests.
+Phase 0 foundation is complete enough for Phase 1 work. Phase 1 Windows PTY spike foundation has started with a `NodePtyBroker`, lifecycle tests, and an xterm.js renderer spike surface; native `node-pty` packaging and manual Windows PTY gates are still open.
 
 ## Product principles
 
@@ -41,4 +41,4 @@ packages/shared   Shared domain types and utilities
 
 ## Roadmap
 
-See [ROADMAP.md](./ROADMAP.md).
+See [ROADMAP.md](./ROADMAP.md) and [PROJECT_STATUS.md](./PROJECT_STATUS.md) for session handoff context.

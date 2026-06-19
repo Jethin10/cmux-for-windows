@@ -12,22 +12,13 @@ import type {
   CreateTerminalRequest,
   PtyBroker,
   TerminalCloseMode,
+  TerminalExitEvent,
+  TerminalExitHandler,
   TerminalOutputEvent,
+  TerminalOutputHandler,
+  TerminalSubscription,
 } from "./index.js";
 import { assertValidTerminalSize } from "./validation.js";
-
-export interface TerminalExitEvent {
-  terminalSessionId: TerminalSessionId;
-  exitCode?: number;
-  signal?: number;
-}
-
-export type TerminalOutputHandler = (event: TerminalOutputEvent) => void;
-export type TerminalExitHandler = (event: TerminalExitEvent) => void;
-
-export interface TerminalSubscription {
-  dispose(): void;
-}
 
 interface NodePtyProcess {
   pid: number;

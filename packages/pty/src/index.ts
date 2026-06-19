@@ -22,10 +22,28 @@ export interface TerminalOutputEvent {
   data: string;
 }
 
+export interface TerminalExitEvent {
+  terminalSessionId: TerminalSessionId;
+  exitCode?: number;
+  signal?: number;
+}
+
+export type TerminalOutputHandler = (event: TerminalOutputEvent) => void;
+export type TerminalExitHandler = (event: TerminalExitEvent) => void;
+
+export interface TerminalSubscription {
+  dispose(): void;
+}
+
 export interface PtyBroker {
   createTerminal(request: CreateTerminalRequest): Promise<TerminalSession>;
   writeTerminal(terminalId: TerminalSessionId, data: string): Promise<void>;
   resizeTerminal(terminalId: TerminalSessionId, cols: number, rows: number): Promise<void>;
   closeTerminal(terminalId: TerminalSessionId, mode: TerminalCloseMode): Promise<void>;
   restartTerminal(terminalId: TerminalSessionId): Promise<TerminalSession>;
+  subscribeOutput(
+    terminalId: TerminalSessionId,
+    handler: TerminalOutputHandler,
+  ): TerminalSubscription;
+  subscribeExit(terminalId: TerminalSessionId, handler: TerminalExitHandler): TerminalSubscription;
 }

@@ -2,8 +2,20 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ipcChannels, type AppInfoResponse } from "@cmux/ipc";
+import { registerTerminalIpc } from "./terminal-ipc.js";
+import { TerminalService } from "./terminal-service.js";
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
+let terminalServicePromise: Promise<TerminalService> | undefined;
+let terminalService: TerminalService | undefined;
+
+function getTerminalService(): Promise<TerminalService> {
+  terminalServicePromise ??= TerminalService.create().then((service) => {
+    terminalService = service;
+    return service;
+  });
+  return terminalServicePromise;
+}
 
 function createWindow(): BrowserWindow {
   const window = new BrowserWindow({
@@ -34,12 +46,18 @@ ipcMain.handle(ipcChannels.appInfo, (): AppInfoResponse => {
   return { name: app.getName(), version: app.getVersion(), platform: process.platform };
 });
 
+registerTerminalIpc(ipcMain, getTerminalService);
+
 void app.whenReady().then(() => {
   createWindow();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+});
+
+app.on("before-quit", () => {
+  void terminalService?.closeAll("terminate");
 });
 
 app.on("window-all-closed", () => {

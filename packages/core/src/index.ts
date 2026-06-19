@@ -72,6 +72,7 @@ export function detectAgentAttention(output: string): AttentionDetectionResult {
 }
 
 export * from "./approvals.js";
+export * from "./browser.js";
 export * from "./git.js";
 export * from "./panes.js";
 export * from "./templates.js";

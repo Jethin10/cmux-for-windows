@@ -130,6 +130,8 @@ Implemented:
 - typed CLI command envelopes for workspace open, agent list/launch/stop
 - approval request model/risk inference foundation
 - Git porcelain v2 status parsing and summary formatting foundation
+- browser URL safety helpers for future browser surfaces
+- native PTY smoke verification script and release hardening checklist
 
 Still required:
 
@@ -137,7 +139,7 @@ Still required:
 - multi-agent batch launch workflows
 - desktop bridge or named-pipe transport for executing CLI envelopes
 - UI and IPC surfaces for Git workflow/approval/browser features
-- packaged installer/release hardening
+- packaged installer configuration and signed release pipeline
 
 Still required before Phase 1 can be considered passed:
 

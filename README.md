@@ -41,4 +41,4 @@ packages/shared   Shared domain types and utilities
 
 ## Roadmap
 
-See [ROADMAP.md](./ROADMAP.md) and [PROJECT_STATUS.md](./PROJECT_STATUS.md) for session handoff context.
+See [ROADMAP.md](./ROADMAP.md), [PROJECT_STATUS.md](./PROJECT_STATUS.md), and [docs/release-hardening.md](./docs/release-hardening.md) for session handoff and release gate context.

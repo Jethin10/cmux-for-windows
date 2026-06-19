@@ -64,3 +64,5 @@ Status: **started with panes/surfaces and CLI/API foundations**
 - CLI/API entrypoint. Started with typed CLI command envelopes for workspace and agent operations.
 - Git workflow foundation. Started with porcelain v2 status parsing and summary formatting.
 - Approval foundation. Started with approval request lifecycle and risk inference helpers.
+- Browser surface foundation. Started with safe URL normalization for http/https-only browser surfaces.
+- Release hardening. Started with native PTY smoke script and release gate checklist.

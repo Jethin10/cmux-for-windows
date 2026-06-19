@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "format:check": "prettier --check .",
-    "dev:desktop": "pnpm --filter @cmux/desktop dev"
+    "dev:desktop": "pnpm --filter @cmux/desktop dev",
+    "verify:native-pty": "pnpm --filter @cmux/pty verify:native"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

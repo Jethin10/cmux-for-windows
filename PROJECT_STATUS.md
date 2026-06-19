@@ -95,8 +95,27 @@ Still required before Phase 3 can be considered complete:
 
 - migrate file-backed persistence to the planned SQLite repository layer
 - add transcript reads attached to a selected session terminal view
-- add robust write serialization/backpressure and crash-safe atomic persistence
+- add robust transcript write serialization/backpressure and crash-safe atomic persistence
 - add search indexing instead of linear JSONL scans
+
+### Phase 4 — Notifications and Attention Routing
+
+Status: **started with heuristic notifications**
+
+Implemented:
+
+- notification creation from waiting/failed agent attention heuristics
+- unread workspace counts
+- notification list/mark-read/next-unread IPC and preload methods
+- dashboard notification panel and jump-to-next-unread action
+- Electron desktop toast adapter for attention/error notifications
+
+Still required before Phase 4 can be considered complete:
+
+- persist notification records in the future SQLite repository
+- add push updates instead of manual dashboard refresh
+- tune notification throttling/deduplication for noisy output
+- add Windows notification activation/deep-link routing back into a session
 
 Still required before Phase 1 can be considered passed:
 

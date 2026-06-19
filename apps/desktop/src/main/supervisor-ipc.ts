@@ -6,6 +6,9 @@ import {
   assertAgentListRequest,
   assertAgentRestartRequest,
   assertAgentStopRequest,
+  assertNotificationListRequest,
+  assertNotificationMarkReadRequest,
+  assertNotificationNextUnreadRequest,
   assertTranscriptSearchRequest,
   assertWorkspaceOpenRequest,
   ipcChannels,
@@ -15,6 +18,9 @@ import {
   type AgentListRequest,
   type AgentRestartRequest,
   type AgentStopRequest,
+  type NotificationListRequest,
+  type NotificationMarkReadRequest,
+  type NotificationNextUnreadRequest,
   type TranscriptSearchRequest,
   type WorkspaceOpenRequest,
 } from "@cmux/ipc";
@@ -76,6 +82,27 @@ export function registerSupervisorIpc(
     return (await getSupervisorService()).searchTranscripts(payload as TranscriptSearchRequest);
   });
 
+  ipcMain.handle(ipcChannels.notificationList, async (_event, payload: unknown) => {
+    assertNotificationListRequest(payload);
+    return (await getSupervisorService()).listNotifications(
+      (payload as NotificationListRequest).workspaceId,
+    );
+  });
+
+  ipcMain.handle(ipcChannels.notificationMarkRead, async (_event, payload: unknown) => {
+    assertNotificationMarkReadRequest(payload);
+    return (await getSupervisorService()).markNotificationRead(
+      (payload as NotificationMarkReadRequest).notificationId,
+    );
+  });
+
+  ipcMain.handle(ipcChannels.notificationNextUnread, async (_event, payload: unknown) => {
+    assertNotificationNextUnreadRequest(payload);
+    return (await getSupervisorService()).nextUnreadAgent(
+      (payload as NotificationNextUnreadRequest).workspaceId,
+    );
+  });
+
   return () => {
     ipcMain.removeHandler(ipcChannels.workspaceList);
     ipcMain.removeHandler(ipcChannels.workspaceOpen);
@@ -86,5 +113,8 @@ export function registerSupervisorIpc(
     ipcMain.removeHandler(ipcChannels.agentRestart);
     ipcMain.removeHandler(ipcChannels.agentArchive);
     ipcMain.removeHandler(ipcChannels.transcriptSearch);
+    ipcMain.removeHandler(ipcChannels.notificationList);
+    ipcMain.removeHandler(ipcChannels.notificationMarkRead);
+    ipcMain.removeHandler(ipcChannels.notificationNextUnread);
   };
 }

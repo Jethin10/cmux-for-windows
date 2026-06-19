@@ -8,6 +8,9 @@ import {
   type AgentRestartRequest,
   type AgentStopRequest,
   type AppInfoResponse,
+  type NotificationListRequest,
+  type NotificationMarkReadRequest,
+  type NotificationNextUnreadRequest,
   type TerminalCloseRequest,
   type TerminalCreateRequest,
   type TerminalExitEvent,
@@ -19,7 +22,13 @@ import {
   type TranscriptSearchResult,
   type WorkspaceOpenRequest,
 } from "@cmux/ipc";
-import type { AgentSession, TerminalSession, TerminalSessionId, Workspace } from "@cmux/shared";
+import type {
+  AgentSession,
+  Notification,
+  TerminalSession,
+  TerminalSessionId,
+  Workspace,
+} from "@cmux/shared";
 
 export interface CmuxBridge {
   appInfo(): Promise<AppInfoResponse>;
@@ -37,6 +46,11 @@ export interface CmuxBridge {
   };
   transcript: {
     search(request: TranscriptSearchRequest): Promise<TranscriptSearchResult[]>;
+  };
+  notification: {
+    list(request: NotificationListRequest): Promise<Notification[]>;
+    markRead(request: NotificationMarkReadRequest): Promise<Notification>;
+    nextUnread(request: NotificationNextUnreadRequest): Promise<AgentSession | undefined>;
   };
   terminal: {
     create(request: TerminalCreateRequest): Promise<TerminalSession>;
@@ -77,6 +91,16 @@ const bridge: CmuxBridge = {
     search: (request) =>
       ipcRenderer.invoke(ipcChannels.transcriptSearch, request) as Promise<
         TranscriptSearchResult[]
+      >,
+  },
+  notification: {
+    list: (request) =>
+      ipcRenderer.invoke(ipcChannels.notificationList, request) as Promise<Notification[]>,
+    markRead: (request) =>
+      ipcRenderer.invoke(ipcChannels.notificationMarkRead, request) as Promise<Notification>,
+    nextUnread: (request) =>
+      ipcRenderer.invoke(ipcChannels.notificationNextUnread, request) as Promise<
+        AgentSession | undefined
       >,
   },
   terminal: {

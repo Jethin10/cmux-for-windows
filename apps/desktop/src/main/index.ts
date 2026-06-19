@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ipcChannels, type AppInfoResponse } from "@cmux/ipc";
+import { ElectronDesktopNotificationService } from "./desktop-notification-service.js";
 import { FileSupervisorStore } from "./persistent-store.js";
 import { registerSupervisorIpc } from "./supervisor-ipc.js";
 import { SupervisorService } from "./supervisor-service.js";
@@ -25,6 +26,7 @@ function getSupervisorService(): Promise<SupervisorService> {
   supervisorServicePromise ??= SupervisorService.create(
     getTerminalService,
     new FileSupervisorStore(join(app.getPath("userData"), "supervisor")),
+    new ElectronDesktopNotificationService(),
   );
   return supervisorServicePromise;
 }

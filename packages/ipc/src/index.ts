@@ -1,6 +1,8 @@
 import type {
   AgentSession,
   AgentSessionId,
+  Notification,
+  NotificationId,
   TerminalSession,
   TerminalSessionId,
   Workspace,
@@ -20,6 +22,9 @@ export const ipcChannels = {
   agentRestart: `${IPC_NAMESPACE}:agent:restart`,
   agentArchive: `${IPC_NAMESPACE}:agent:archive`,
   transcriptSearch: `${IPC_NAMESPACE}:transcript:search`,
+  notificationList: `${IPC_NAMESPACE}:notification:list`,
+  notificationMarkRead: `${IPC_NAMESPACE}:notification:mark-read`,
+  notificationNextUnread: `${IPC_NAMESPACE}:notification:next-unread`,
   terminalCreate: `${IPC_NAMESPACE}:terminal:create`,
   terminalWrite: `${IPC_NAMESPACE}:terminal:write`,
   terminalResize: `${IPC_NAMESPACE}:terminal:resize`,
@@ -87,6 +92,18 @@ export interface TranscriptSearchResult {
   excerpt: string;
 }
 
+export interface NotificationListRequest {
+  workspaceId: WorkspaceId;
+}
+
+export interface NotificationMarkReadRequest {
+  notificationId: NotificationId;
+}
+
+export interface NotificationNextUnreadRequest {
+  workspaceId: WorkspaceId;
+}
+
 export type TerminalCloseMode = "interrupt" | "terminate" | "kill-process-tree" | "detach";
 
 export interface TerminalCreateRequest {
@@ -141,6 +158,15 @@ export interface IpcContracts {
   [ipcChannels.transcriptSearch]: {
     request: TranscriptSearchRequest;
     response: TranscriptSearchResult[];
+  };
+  [ipcChannels.notificationList]: { request: NotificationListRequest; response: Notification[] };
+  [ipcChannels.notificationMarkRead]: {
+    request: NotificationMarkReadRequest;
+    response: Notification;
+  };
+  [ipcChannels.notificationNextUnread]: {
+    request: NotificationNextUnreadRequest;
+    response: AgentSession | undefined;
   };
   [ipcChannels.terminalCreate]: { request: TerminalCreateRequest; response: TerminalSession };
   [ipcChannels.terminalWrite]: { request: TerminalWriteRequest; response: void };
@@ -237,6 +263,30 @@ export function assertTranscriptSearchRequest(
   }
 }
 
+export function assertNotificationListRequest(
+  value: unknown,
+): asserts value is NotificationListRequest {
+  if (!isRecord(value)) throw new Error("notification.list request must be an object");
+  const candidate = value as Partial<NotificationListRequest>;
+  assertWorkspaceId(candidate.workspaceId, "notification.list workspaceId");
+}
+
+export function assertNotificationMarkReadRequest(
+  value: unknown,
+): asserts value is NotificationMarkReadRequest {
+  if (!isRecord(value)) throw new Error("notification.markRead request must be an object");
+  const candidate = value as Partial<NotificationMarkReadRequest>;
+  assertNotificationId(candidate.notificationId, "notification.markRead notificationId");
+}
+
+export function assertNotificationNextUnreadRequest(
+  value: unknown,
+): asserts value is NotificationNextUnreadRequest {
+  if (!isRecord(value)) throw new Error("notification.nextUnread request must be an object");
+  const candidate = value as Partial<NotificationNextUnreadRequest>;
+  assertWorkspaceId(candidate.workspaceId, "notification.nextUnread workspaceId");
+}
+
 export function assertTerminalCreateRequest(
   value: unknown,
 ): asserts value is TerminalCreateRequest {
@@ -309,6 +359,10 @@ function assertTerminalSessionId(
   value: unknown,
   label: string,
 ): asserts value is TerminalSessionId {
+  assertNonEmptyString(value, label);
+}
+
+function assertNotificationId(value: unknown, label: string): asserts value is NotificationId {
   assertNonEmptyString(value, label);
 }
 

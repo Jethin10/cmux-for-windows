@@ -12,10 +12,10 @@
 
 ## Phase 1: Windows PTY Spike / Terminal Foundation
 
-- xterm.js terminal view.
-- node-pty ConPTY backend.
+- xterm.js terminal view. Started with secure renderer spike surface.
+- node-pty ConPTY backend. Started with optional `NodePtyBroker` runtime boundary.
 - TerminalService state machine.
-- Spawn/write/resize/close lifecycle.
+- Spawn/write/resize/close lifecycle. Started in `@cmux/pty` with tests.
 - Bounded in-memory scrollback.
 - Packaged dev build proving native PTY loading.
 

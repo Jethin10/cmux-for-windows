@@ -52,6 +52,12 @@ importers:
       "@vitejs/plugin-react":
         specifier: ^4.5.2
         version: 4.7.0(vite@6.4.3(@types/node@24.13.2))
+      "@xterm/addon-fit":
+        specifier: 0.10.0
+        version: 0.10.0(@xterm/xterm@5.5.0)
+      "@xterm/xterm":
+        specifier: 5.5.0
+        version: 5.5.0
       electron:
         specifier: ^36.4.0
         version: 36.9.5
@@ -95,6 +101,10 @@ importers:
       "@cmux/shared":
         specifier: workspace:*
         version: link:../shared
+    optionalDependencies:
+      node-pty:
+        specifier: 1.1.0
+        version: 1.1.0
 
   packages/shared: {}
 
@@ -1095,6 +1105,20 @@ packages:
         integrity: sha512-lI23nIs4bnT3T8NIoh+vFaz5s2/DdP0Jgt2jxwgWljvwn82cLJtyi/If+fjFyoLMGIOz0U/fKvWE0d4jsNQEfg==,
       }
 
+  "@xterm/addon-fit@0.10.0":
+    resolution:
+      {
+        integrity: sha512-UFYkDm4HUahf2lnEyHvio51TNGiLK66mqP2JoATy7hRZeXaGMRDr00JiSF7m63vR5WKATF605yEggJKsw0JpMQ==,
+      }
+    peerDependencies:
+      "@xterm/xterm": ^5.0.0
+
+  "@xterm/xterm@5.5.0":
+    resolution:
+      {
+        integrity: sha512-hqJHYaQb5OptNunnyAnkHyM8aCjZ1MEIDTQu1iIbbTD/xops91NB5yq1ZK/dC2JDbVWtF23zUtl9JE2NqwT87A==,
+      }
+
   acorn-jsx@5.3.2:
     resolution:
       {
@@ -1913,6 +1937,18 @@ packages:
     resolution:
       {
         integrity: sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==,
+      }
+
+  node-addon-api@7.1.1:
+    resolution:
+      {
+        integrity: sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==,
+      }
+
+  node-pty@1.1.0:
+    resolution:
+      {
+        integrity: sha512-20JqtutY6JPXTUnL0ij1uad7Qe1baT46lyolh2sSENDd4sTzKZ4nmAFkeAARDKwmlLjPx6XKRlwRUxwjOy+lUg==,
       }
 
   node-releases@2.0.48:
@@ -3053,6 +3089,12 @@ snapshots:
       loupe: 3.2.1
       tinyrainbow: 2.0.0
 
+  "@xterm/addon-fit@0.10.0(@xterm/xterm@5.5.0)":
+    dependencies:
+      "@xterm/xterm": 5.5.0
+
+  "@xterm/xterm@5.5.0": {}
+
   acorn-jsx@5.3.2(acorn@8.17.0):
     dependencies:
       acorn: 8.17.0
@@ -3529,6 +3571,14 @@ snapshots:
   nanoid@3.3.13: {}
 
   natural-compare@1.4.0: {}
+
+  node-addon-api@7.1.1:
+    optional: true
+
+  node-pty@1.1.0:
+    dependencies:
+      node-addon-api: 7.1.1
+    optional: true
 
   node-releases@2.0.48: {}
 

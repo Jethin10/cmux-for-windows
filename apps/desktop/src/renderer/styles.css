@@ -18,6 +18,7 @@ body {
 .shell {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  grid-template-rows: auto 1fr;
   gap: 24px;
   min-height: 100vh;
   box-sizing: border-box;
@@ -25,7 +26,8 @@ body {
 }
 
 .hero,
-.panel {
+.panel,
+.terminal-panel {
   border: 1px solid #263244;
   border-radius: 18px;
   background: linear-gradient(135deg, rgba(24, 34, 54, 0.92), rgba(14, 20, 32, 0.92));
@@ -54,6 +56,20 @@ code {
   padding: 10px 12px;
   background: #020617;
   color: #bfdbfe;
+}
+
+.terminal-panel {
+  grid-column: 1 / -1;
+  min-height: 320px;
+  padding: 12px;
+}
+
+.terminal-spike {
+  width: 100%;
+  height: 320px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #020617;
 }
 
 li {

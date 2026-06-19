@@ -1,0 +1,13 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/shared" },
+    { "path": "packages/ipc" },
+    { "path": "packages/storage" },
+    { "path": "packages/core" },
+    { "path": "packages/pty" },
+    { "path": "packages/ui" },
+    { "path": "packages/cli" },
+    { "path": "apps/desktop" }
+  ]
+}

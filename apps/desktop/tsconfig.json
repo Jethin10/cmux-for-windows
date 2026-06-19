@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "composite": true,
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM"]
+  },
+  "references": [
+    { "path": "../../packages/shared" },
+    { "path": "../../packages/ipc" },
+    { "path": "../../packages/core" },
+    { "path": "../../packages/ui" }
+  ],
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
+}

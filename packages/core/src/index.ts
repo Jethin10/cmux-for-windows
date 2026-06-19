@@ -70,3 +70,5 @@ export function detectAgentAttention(output: string): AttentionDetectionResult {
 
   return { status: "running" };
 }
+
+export * from "./templates.js";

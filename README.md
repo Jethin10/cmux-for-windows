@@ -30,7 +30,7 @@ If `pnpm` is not installed, install it with Node's package manager or Corepack b
 
 ```text
 apps/desktop      Electron app shell
-packages/core     Domain state machines and services
+packages/core     Domain state machines, default templates, and services
 packages/pty      PTY broker interface and future node-pty implementation
 packages/storage  SQLite migration framework abstractions
 packages/ipc      Typed IPC channel contracts

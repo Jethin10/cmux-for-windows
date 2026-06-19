@@ -11,6 +11,7 @@
   "dependencies": {
     "@cmux/core": "workspace:*",
     "@cmux/ipc": "workspace:*",
+    "@cmux/pty": "workspace:*",
     "@cmux/shared": "workspace:*",
     "@cmux/ui": "workspace:*",
     "@vitejs/plugin-react": "^4.5.2",

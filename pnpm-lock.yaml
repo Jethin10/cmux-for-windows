@@ -43,6 +43,9 @@ importers:
       "@cmux/ipc":
         specifier: workspace:*
         version: link:../../packages/ipc
+      "@cmux/pty":
+        specifier: workspace:*
+        version: link:../../packages/pty
       "@cmux/shared":
         specifier: workspace:*
         version: link:../../packages/shared

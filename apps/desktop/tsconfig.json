@@ -10,6 +10,7 @@
   "references": [
     { "path": "../../packages/shared" },
     { "path": "../../packages/ipc" },
+    { "path": "../../packages/pty" },
     { "path": "../../packages/core" },
     { "path": "../../packages/ui" }
   ],

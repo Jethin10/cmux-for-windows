@@ -18,10 +18,10 @@ Status: **in progress; manual Windows/native packaging gates not passed yet**
 
 - xterm.js terminal view. Started with secure renderer spike surface.
 - node-pty ConPTY backend. Started with optional `NodePtyBroker` runtime boundary.
-- TerminalService state machine.
-- Spawn/write/resize/close lifecycle. Started in `@cmux/pty` with tests.
+- TerminalService state machine. Started with main-process `TerminalService` ownership of `NodePtyBroker`.
+- Spawn/write/resize/close lifecycle. Started in `@cmux/pty` with tests and wired through Electron IPC.
 - Bounded in-memory scrollback.
-- Secure IPC wiring from main-process PTY broker to renderer terminal surface.
+- Secure IPC wiring from main-process PTY broker to renderer terminal surface. Started with typed preload methods and detachable output/exit subscriptions.
 - Packaged dev build proving native PTY loading.
 
 ## Phase 2: Agent Session Supervisor MVP Core

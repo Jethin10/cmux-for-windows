@@ -54,12 +54,15 @@ Implemented:
 - signal-aware exit/crash classification
 - restart termination before runtime disposal
 - xterm.js renderer spike surface
+- main-process `TerminalService` wiring for backend-owned local shells
+- secure terminal IPC for create/write/resize/close and detachable output/exit subscriptions
+- preload bridge methods for terminal IPC without exposing PTY/process handles
 - PTY spike docs and manual validation checklist
 
 Still required before Phase 1 can be considered passed:
 
 - approve/build native `node-pty` locally
-- wire real PTY output to renderer through secure IPC
+- manually verify real PTY output in the renderer through secure IPC
 - spawn `pwsh.exe`, `powershell.exe`, `cmd.exe`, `wsl.exe`, Git Bash, and `ssh.exe` where available
 - validate Ctrl+C, paste, bracketed paste, Unicode, CJK, emoji, IME, and AltGr/non-US layouts
 - stress high-output commands and rapid resize

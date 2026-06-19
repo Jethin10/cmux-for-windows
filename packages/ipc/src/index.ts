@@ -14,10 +14,12 @@ export const ipcChannels = {
   workspaceList: `${IPC_NAMESPACE}:workspace:list`,
   workspaceOpen: `${IPC_NAMESPACE}:workspace:open`,
   agentList: `${IPC_NAMESPACE}:agent:list`,
+  agentHistory: `${IPC_NAMESPACE}:agent:history`,
   agentLaunch: `${IPC_NAMESPACE}:agent:launch`,
   agentStop: `${IPC_NAMESPACE}:agent:stop`,
   agentRestart: `${IPC_NAMESPACE}:agent:restart`,
   agentArchive: `${IPC_NAMESPACE}:agent:archive`,
+  transcriptSearch: `${IPC_NAMESPACE}:transcript:search`,
   terminalCreate: `${IPC_NAMESPACE}:terminal:create`,
   terminalWrite: `${IPC_NAMESPACE}:terminal:write`,
   terminalResize: `${IPC_NAMESPACE}:terminal:resize`,
@@ -47,6 +49,10 @@ export interface AgentListRequest {
   workspaceId: WorkspaceId;
 }
 
+export interface AgentHistoryRequest {
+  workspaceId: WorkspaceId;
+}
+
 export interface AgentLaunchRequest {
   workspaceId: WorkspaceId;
   templateId: string;
@@ -65,6 +71,20 @@ export interface AgentRestartRequest {
 
 export interface AgentArchiveRequest {
   agentSessionId: AgentSessionId;
+}
+
+export interface TranscriptSearchRequest {
+  workspaceId?: WorkspaceId;
+  query: string;
+  limit?: number;
+}
+
+export interface TranscriptSearchResult {
+  terminalSessionId: TerminalSessionId;
+  agentSessionId?: AgentSessionId;
+  sequence: number;
+  createdAt: string;
+  excerpt: string;
 }
 
 export type TerminalCloseMode = "interrupt" | "terminate" | "kill-process-tree" | "detach";
@@ -113,10 +133,15 @@ export interface IpcContracts {
   [ipcChannels.workspaceList]: { request: void; response: Workspace[] };
   [ipcChannels.workspaceOpen]: { request: WorkspaceOpenRequest; response: Workspace };
   [ipcChannels.agentList]: { request: AgentListRequest; response: AgentSession[] };
+  [ipcChannels.agentHistory]: { request: AgentHistoryRequest; response: AgentSession[] };
   [ipcChannels.agentLaunch]: { request: AgentLaunchRequest; response: AgentSession };
   [ipcChannels.agentStop]: { request: AgentStopRequest; response: AgentSession };
   [ipcChannels.agentRestart]: { request: AgentRestartRequest; response: AgentSession };
   [ipcChannels.agentArchive]: { request: AgentArchiveRequest; response: AgentSession };
+  [ipcChannels.transcriptSearch]: {
+    request: TranscriptSearchRequest;
+    response: TranscriptSearchResult[];
+  };
   [ipcChannels.terminalCreate]: { request: TerminalCreateRequest; response: TerminalSession };
   [ipcChannels.terminalWrite]: { request: TerminalWriteRequest; response: void };
   [ipcChannels.terminalResize]: { request: TerminalResizeRequest; response: void };
@@ -153,6 +178,12 @@ export function assertAgentListRequest(value: unknown): asserts value is AgentLi
   assertWorkspaceId(candidate.workspaceId, "agent.list workspaceId");
 }
 
+export function assertAgentHistoryRequest(value: unknown): asserts value is AgentHistoryRequest {
+  if (!isRecord(value)) throw new Error("agent.history request must be an object");
+  const candidate = value as Partial<AgentHistoryRequest>;
+  assertWorkspaceId(candidate.workspaceId, "agent.history workspaceId");
+}
+
 export function assertAgentLaunchRequest(value: unknown): asserts value is AgentLaunchRequest {
   if (!isRecord(value)) throw new Error("agent.launch request must be an object");
   const candidate = value as Partial<AgentLaunchRequest>;
@@ -187,6 +218,23 @@ export function assertAgentArchiveRequest(value: unknown): asserts value is Agen
   if (!isRecord(value)) throw new Error("agent.archive request must be an object");
   const candidate = value as Partial<AgentArchiveRequest>;
   assertAgentSessionId(candidate.agentSessionId, "agent.archive agentSessionId");
+}
+
+export function assertTranscriptSearchRequest(
+  value: unknown,
+): asserts value is TranscriptSearchRequest {
+  if (!isRecord(value)) throw new Error("transcript.search request must be an object");
+  const candidate = value as Partial<TranscriptSearchRequest>;
+  if (candidate.workspaceId !== undefined) {
+    assertWorkspaceId(candidate.workspaceId, "transcript.search workspaceId");
+  }
+  assertNonEmptyString(candidate.query, "transcript.search query");
+  if (
+    candidate.limit !== undefined &&
+    (!Number.isInteger(candidate.limit) || candidate.limit < 1 || candidate.limit > 200)
+  ) {
+    throw new Error("transcript.search limit must be an integer between 1 and 200");
+  }
 }
 
 export function assertTerminalCreateRequest(

@@ -1,17 +1,21 @@
 import type { IpcMain } from "electron";
 import {
   assertAgentArchiveRequest,
+  assertAgentHistoryRequest,
   assertAgentLaunchRequest,
   assertAgentListRequest,
   assertAgentRestartRequest,
   assertAgentStopRequest,
+  assertTranscriptSearchRequest,
   assertWorkspaceOpenRequest,
   ipcChannels,
   type AgentArchiveRequest,
+  type AgentHistoryRequest,
   type AgentLaunchRequest,
   type AgentListRequest,
   type AgentRestartRequest,
   type AgentStopRequest,
+  type TranscriptSearchRequest,
   type WorkspaceOpenRequest,
 } from "@cmux/ipc";
 import type { SupervisorService } from "./supervisor-service.js";
@@ -34,6 +38,13 @@ export function registerSupervisorIpc(
   ipcMain.handle(ipcChannels.agentList, async (_event, payload: unknown) => {
     assertAgentListRequest(payload);
     return (await getSupervisorService()).listAgents((payload as AgentListRequest).workspaceId);
+  });
+
+  ipcMain.handle(ipcChannels.agentHistory, async (_event, payload: unknown) => {
+    assertAgentHistoryRequest(payload);
+    return (await getSupervisorService()).listAgentHistory(
+      (payload as AgentHistoryRequest).workspaceId,
+    );
   });
 
   ipcMain.handle(ipcChannels.agentLaunch, async (_event, payload: unknown) => {
@@ -60,13 +71,20 @@ export function registerSupervisorIpc(
     );
   });
 
+  ipcMain.handle(ipcChannels.transcriptSearch, async (_event, payload: unknown) => {
+    assertTranscriptSearchRequest(payload);
+    return (await getSupervisorService()).searchTranscripts(payload as TranscriptSearchRequest);
+  });
+
   return () => {
     ipcMain.removeHandler(ipcChannels.workspaceList);
     ipcMain.removeHandler(ipcChannels.workspaceOpen);
     ipcMain.removeHandler(ipcChannels.agentList);
+    ipcMain.removeHandler(ipcChannels.agentHistory);
     ipcMain.removeHandler(ipcChannels.agentLaunch);
     ipcMain.removeHandler(ipcChannels.agentStop);
     ipcMain.removeHandler(ipcChannels.agentRestart);
     ipcMain.removeHandler(ipcChannels.agentArchive);
+    ipcMain.removeHandler(ipcChannels.transcriptSearch);
   };
 }

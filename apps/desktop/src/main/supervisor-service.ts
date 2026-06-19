@@ -20,9 +20,12 @@ import type {
   AgentLaunchRequest,
   AgentStopRequest,
   TerminalCloseMode,
+  TranscriptSearchRequest,
+  TranscriptSearchResult,
   WorkspaceOpenRequest,
 } from "@cmux/ipc";
 import type { TerminalExitEvent, TerminalOutputEvent, TerminalSubscription } from "@cmux/pty";
+import type { SupervisorStore } from "./persistent-store.js";
 import type { CreateProcessTerminalRequest, TerminalService } from "./terminal-service.js";
 
 const DEFAULT_TERMINAL_COLS = 100;
@@ -65,14 +68,31 @@ export class SupervisorService {
   constructor(
     private readonly terminalService: SupervisorTerminalService,
     templates: readonly Template[] = defaultTemplates,
+    private readonly store?: SupervisorStore,
   ) {
     this.templates = templates;
   }
 
   static async create(
     getTerminalService: () => Promise<TerminalService>,
+    store?: SupervisorStore,
   ): Promise<SupervisorService> {
-    return new SupervisorService(await getTerminalService());
+    const service = new SupervisorService(await getTerminalService(), defaultTemplates, store);
+    await service.restore();
+    return service;
+  }
+
+  async restore(): Promise<void> {
+    if (!this.store) return;
+    const snapshot = await this.store.loadSnapshot();
+    this.workspaces.clear();
+    this.workspacesByRoot.clear();
+    this.agents.clear();
+    for (const workspace of snapshot.workspaces) {
+      this.workspaces.set(workspace.id, workspace);
+      this.workspacesByRoot.set(normalizeRootPath(workspace.rootPath), workspace.id);
+    }
+    for (const agent of snapshot.agents) this.agents.set(agent.id, agent);
   }
 
   listWorkspaces(): Workspace[] {
@@ -86,6 +106,7 @@ export class SupervisorService {
       const existing = this.requireWorkspace(existingId);
       const updated = { ...existing, trusted: request.trusted, updatedAt: nowIso() };
       this.workspaces.set(existing.id, updated);
+      void this.persistSnapshot();
       return updated;
     }
 
@@ -101,6 +122,7 @@ export class SupervisorService {
     };
     this.workspaces.set(workspace.id, workspace);
     this.workspacesByRoot.set(rootPath, workspace.id);
+    void this.persistSnapshot();
     return workspace;
   }
 
@@ -109,6 +131,22 @@ export class SupervisorService {
     return [...this.agents.values()]
       .filter((agent) => agent.workspaceId === workspaceId && agent.status !== "archived")
       .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+  }
+
+  listAgentHistory(workspaceId: WorkspaceId): AgentSession[] {
+    this.requireWorkspace(workspaceId);
+    return [...this.agents.values()]
+      .filter((agent) => agent.workspaceId === workspaceId)
+      .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+  }
+
+  async searchTranscripts(request: TranscriptSearchRequest): Promise<TranscriptSearchResult[]> {
+    if (!this.store) return [];
+    if (request.workspaceId) this.requireWorkspace(request.workspaceId);
+    return this.store.searchTranscripts(request.query, {
+      ...(request.workspaceId ? { workspaceId: request.workspaceId } : {}),
+      ...(request.limit ? { limit: request.limit } : {}),
+    });
   }
 
   async launchAgent(request: AgentLaunchRequest): Promise<AgentSession> {
@@ -138,6 +176,7 @@ export class SupervisorService {
       } satisfies AgentLaunchMetadata),
     };
     this.agents.set(agent.id, agent);
+    void this.persistSnapshot();
 
     let terminal: { id: TerminalSessionId };
     try {
@@ -257,6 +296,16 @@ export class SupervisorService {
         ) {
           return;
         }
+        void this.store
+          ?.appendTranscript({
+            workspaceId: current.workspaceId,
+            agentSessionId: current.id,
+            terminalSessionId: event.terminalSessionId,
+            sequence: event.sequence,
+            createdAt: nowIso(),
+            data: event.data,
+          })
+          .catch((error: unknown) => console.error("Failed to persist transcript output", error));
         const detection = detectAgentAttention(event.data);
         this.updateAgent(agentId, {
           status: detection.status,
@@ -319,6 +368,7 @@ export class SupervisorService {
   private updateWorkspace(workspaceId: WorkspaceId, patch: Partial<Workspace>): Workspace {
     const updated = { ...this.requireWorkspace(workspaceId), ...patch };
     this.workspaces.set(workspaceId, updated);
+    void this.persistSnapshot();
     return updated;
   }
 
@@ -329,7 +379,20 @@ export class SupervisorService {
       unknown
     >) as unknown as AgentSession;
     this.agents.set(agentId, updated);
+    void this.persistSnapshot();
     return updated;
+  }
+
+  private async persistSnapshot(): Promise<void> {
+    if (!this.store) return;
+    try {
+      await this.store.saveSnapshot({
+        workspaces: [...this.workspaces.values()],
+        agents: [...this.agents.values()],
+      });
+    } catch (error) {
+      console.error("Failed to persist supervisor snapshot", error);
+    }
   }
 }
 

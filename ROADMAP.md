@@ -37,10 +37,12 @@ Status: **started with in-memory desktop supervisor**
 
 ## Phase 3: Persistent Logs, Search, and Recovery
 
-- Bounded persisted transcript chunks.
-- Search current/all session logs.
-- Session history view.
-- Restore metadata after restart.
+Status: **started with file-backed desktop persistence**
+
+- Bounded persisted transcript chunks. Started with per-terminal JSONL transcript files capped by byte retention.
+- Search current/all session logs. Started with typed transcript search IPC and dashboard search UI.
+- Session history view. Started with active-session list plus history IPC/UI including archived sessions.
+- Restore metadata after restart. Started with file-backed workspace/session snapshot restore at service startup.
 
 ## Phase 4: Notifications and Attention Routing
 

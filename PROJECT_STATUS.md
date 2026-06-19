@@ -74,10 +74,29 @@ Implemented:
 
 Still required before Phase 2 can be considered complete:
 
-- persist workspace/session metadata after restart
 - attach session-specific transcript/terminal views instead of only the standalone PTY spike surface
 - improve restart semantics for long-running shells and missing CLIs
 - add richer session filtering/attention routing
+
+### Phase 3 — Persistent Logs, Search, and Recovery
+
+Status: **started with file-backed desktop persistence**
+
+Implemented:
+
+- file-backed workspace/session snapshot under Electron `userData`
+- workspace/session metadata restore on supervisor startup
+- per-terminal JSONL transcript append from PTY output
+- byte-capped transcript retention per terminal
+- typed transcript search IPC and dashboard search UI
+- session history IPC/UI that includes archived sessions
+
+Still required before Phase 3 can be considered complete:
+
+- migrate file-backed persistence to the planned SQLite repository layer
+- add transcript reads attached to a selected session terminal view
+- add robust write serialization/backpressure and crash-safe atomic persistence
+- add search indexing instead of linear JSONL scans
 
 Still required before Phase 1 can be considered passed:
 

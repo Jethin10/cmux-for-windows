@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   assertAgentArchiveRequest,
+  assertAgentHistoryRequest,
   assertAgentLaunchRequest,
   assertAgentListRequest,
   assertAgentRestartRequest,
   assertAgentStopRequest,
+  assertTranscriptSearchRequest,
   assertWorkspaceOpenRequest,
 } from "./index.js";
 
@@ -12,6 +14,7 @@ describe("workspace and agent IPC request validation", () => {
   it("accepts valid workspace and agent payloads", () => {
     expect(() => assertWorkspaceOpenRequest({ rootPath: "C:/repo", trusted: true })).not.toThrow();
     expect(() => assertAgentListRequest({ workspaceId: "workspace-1" })).not.toThrow();
+    expect(() => assertAgentHistoryRequest({ workspaceId: "workspace-1" })).not.toThrow();
     expect(() =>
       assertAgentLaunchRequest({
         workspaceId: "workspace-1",
@@ -25,6 +28,9 @@ describe("workspace and agent IPC request validation", () => {
     ).not.toThrow();
     expect(() => assertAgentRestartRequest({ agentSessionId: "agent-1" })).not.toThrow();
     expect(() => assertAgentArchiveRequest({ agentSessionId: "agent-1" })).not.toThrow();
+    expect(() =>
+      assertTranscriptSearchRequest({ workspaceId: "workspace-1", query: "failed", limit: 20 }),
+    ).not.toThrow();
   });
 
   it("rejects malformed agent payloads", () => {
@@ -36,5 +42,7 @@ describe("workspace and agent IPC request validation", () => {
     expect(() => assertAgentStopRequest({ agentSessionId: "agent-1", mode: "detach" })).toThrow(
       /mode/,
     );
+    expect(() => assertTranscriptSearchRequest({ query: "" })).toThrow(/query/);
+    expect(() => assertTranscriptSearchRequest({ query: "failed", limit: 500 })).toThrow(/limit/);
   });
 });

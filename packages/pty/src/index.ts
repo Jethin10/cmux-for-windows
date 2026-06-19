@@ -1,5 +1,8 @@
 import type { TerminalSession, TerminalSessionId } from "@cmux/shared";
 
+export * from "./broker.js";
+export * from "./validation.js";
+
 export interface CreateTerminalRequest {
   profileId: string;
   command: string;
@@ -25,10 +28,4 @@ export interface PtyBroker {
   resizeTerminal(terminalId: TerminalSessionId, cols: number, rows: number): Promise<void>;
   closeTerminal(terminalId: TerminalSessionId, mode: TerminalCloseMode): Promise<void>;
   restartTerminal(terminalId: TerminalSessionId): Promise<TerminalSession>;
-}
-
-export function assertValidTerminalSize(cols: number, rows: number): void {
-  if (!Number.isInteger(cols) || !Number.isInteger(rows) || cols < 1 || rows < 1) {
-    throw new Error(`Invalid terminal size ${cols}x${rows}; never send 0x0 resize to ConPTY`);
-  }
 }

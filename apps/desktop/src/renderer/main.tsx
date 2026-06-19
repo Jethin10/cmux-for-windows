@@ -1,6 +1,7 @@
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { formatSessionBadge } from "@cmux/ui";
+import { TerminalSpike } from "./TerminalSpike.js";
 import "./styles.css";
 
 function App() {
@@ -18,10 +19,13 @@ function App() {
         <p className="eyebrow">Windows-first agent terminal command center</p>
         <h1>CMux for Windows</h1>
         <p>
-          Phase 0 foundation is ready. Next: Windows PTY spike, xterm.js surface, and
-          TerminalService lifecycle validation.
+          Phase 1 PTY spike foundation is underway: xterm.js renders in the secure renderer and the
+          backend PTY broker owns process lifecycle state.
         </p>
         <code>{appInfo}</code>
+      </section>
+      <section className="terminal-panel">
+        <TerminalSpike />
       </section>
       <section className="panel">
         <h2>Supervisor MVP target</h2>

@@ -62,3 +62,5 @@ Status: **started with panes/surfaces and CLI/API foundations**
 - Multi-pane dashboard. Started with a local shell pane beside an agent session pane.
 - Renderer bundle hardening. Started with Vite manual chunks for React and xterm.
 - CLI/API entrypoint. Started with typed CLI command envelopes for workspace and agent operations.
+- Git workflow foundation. Started with porcelain v2 status parsing and summary formatting.
+- Approval foundation. Started with approval request lifecycle and risk inference helpers.

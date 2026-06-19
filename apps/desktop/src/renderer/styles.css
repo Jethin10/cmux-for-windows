@@ -72,6 +72,35 @@ code {
   padding: 12px;
 }
 
+.pane-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pane-surface {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-width: 0;
+}
+
+.pane-title {
+  padding: 8px 10px;
+  color: #93c5fd;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.empty-surface {
+  display: grid;
+  place-items: center;
+  min-height: 320px;
+  border-radius: 12px;
+  background: #020617;
+  color: #94a3b8;
+  text-align: center;
+}
+
 .form-row,
 .form-grid {
   display: grid;

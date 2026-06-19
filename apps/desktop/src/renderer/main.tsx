@@ -5,6 +5,7 @@ import type { TranscriptSearchResult } from "@cmux/ipc";
 import type { AgentSession, Notification, Workspace } from "@cmux/shared";
 import { formatSessionBadge } from "@cmux/ui";
 import { TerminalSpike } from "./TerminalSpike.js";
+import { TerminalSurface } from "./TerminalSurface.js";
 import "./styles.css";
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchResults, setSearchResults] = useState<TranscriptSearchResult[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>();
   const [templateId, setTemplateId] = useState<string>(String(defaultTemplates[0]?.id ?? ""));
   const [agentTitle, setAgentTitle] = useState<string>("Pi in repo");
   const [prompt, setPrompt] = useState<string>("Review the repository and summarize next steps.");
@@ -26,6 +28,10 @@ function App() {
   const activeWorkspace = useMemo(
     () => workspaces.find((workspace) => workspace.id === activeWorkspaceId),
     [activeWorkspaceId, workspaces],
+  );
+  const selectedAgent = useMemo(
+    () => agents.find((agent) => agent.id === selectedAgentId),
+    [agents, selectedAgentId],
   );
 
   useEffect(() => {
@@ -58,6 +64,10 @@ function App() {
     setAgents(nextAgents);
     setHistory(nextHistory);
     setNotifications(await window.cmux.notification.list({ workspaceId: workspaceIdValue }));
+    setSelectedAgentId((current) => {
+      if (current && nextAgents.some((agent) => agent.id === current)) return current;
+      return nextAgents.find((agent) => agent.terminalSessionId)?.id;
+    });
   }
 
   async function runAction(action: () => Promise<void>): Promise<void> {
@@ -208,6 +218,12 @@ function App() {
               </div>
               <div className="session-actions">
                 <button
+                  disabled={!agent.terminalSessionId}
+                  onClick={() => setSelectedAgentId(agent.id)}
+                >
+                  Attach
+                </button>
+                <button
                   disabled={busy || agent.status === "stopped" || agent.status === "archived"}
                   onClick={() =>
                     void runAction(async () => {
@@ -357,8 +373,27 @@ function App() {
         </ul>
       </section>
 
-      <section className="terminal-panel">
-        <TerminalSpike />
+      <section className="terminal-panel pane-grid">
+        <div className="pane-surface">
+          <div className="pane-title">Local shell spike</div>
+          <TerminalSpike />
+        </div>
+        <div className="pane-surface">
+          <div className="pane-title">
+            {selectedAgent ? `Agent session: ${selectedAgent.title}` : "Agent session surface"}
+          </div>
+          {selectedAgent?.terminalSessionId ? (
+            <TerminalSurface
+              key={selectedAgent.terminalSessionId}
+              terminalSessionId={selectedAgent.terminalSessionId}
+              title={selectedAgent.title}
+            />
+          ) : (
+            <div className="empty-surface">
+              Select a running session and click Attach to open a live terminal pane.
+            </div>
+          )}
+        </div>
       </section>
     </main>
   );

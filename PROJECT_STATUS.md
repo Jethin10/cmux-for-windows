@@ -1,0 +1,114 @@
+# Project Status and Session Handoff
+
+Last updated: 2026-06-19
+
+## One-line goal
+
+Build a Windows-first Electron/React desktop app for supervising multiple coding-agent terminal sessions, with reliable PTY lifecycle, statuses, notifications, logs, search, and recovery.
+
+## Repository
+
+- GitHub: `https://github.com/Jethin10/cmux-for-windows`
+- Local path: `C:/cmux/cmux-for-windows`
+- Upstream reference: `C:/cmux/reference/cmux.git`
+
+## Completed work
+
+### Phase 0 — Repository and architecture foundation
+
+Status: **complete enough for Phase 1 work**
+
+Implemented:
+
+- pnpm monorepo skeleton
+- strict TypeScript config
+- ESLint/Prettier/Vitest
+- GitHub Actions CI on Windows
+- Electron app shell with secure preload baseline
+- packages:
+  - `@cmux/shared`
+  - `@cmux/core`
+  - `@cmux/pty`
+  - `@cmux/storage`
+  - `@cmux/ipc`
+  - `@cmux/ui`
+  - `@cmux/cli`
+- architecture/security/roadmap docs
+- ADRs 0001–0007
+- SQLite migration framework abstraction and tests
+- terminal/agent state-machine tests
+- default agent/shell launcher templates and tests
+
+### Phase 1 — Windows PTY spike foundation
+
+Status: **started; validation gates still open**
+
+Implemented:
+
+- optional `node-pty` dependency in `@cmux/pty`
+- `NodePtyBroker` runtime boundary
+- PTY create/write/resize/close/restart operations
+- output subscriptions with monotonically increasing sequence numbers
+- zero-size resize guard before ConPTY
+- interrupt/terminate/detach/process-tree-kill close modes
+- signal-aware exit/crash classification
+- restart termination before runtime disposal
+- xterm.js renderer spike surface
+- PTY spike docs and manual validation checklist
+
+Still required before Phase 1 can be considered passed:
+
+- approve/build native `node-pty` locally
+- wire real PTY output to renderer through secure IPC
+- spawn `pwsh.exe`, `powershell.exe`, `cmd.exe`, `wsl.exe`, Git Bash, and `ssh.exe` where available
+- validate Ctrl+C, paste, bracketed paste, Unicode, CJK, emoji, IME, and AltGr/non-US layouts
+- stress high-output commands and rapid resize
+- close many PTYs and check for orphaned process trees
+- package clean Windows build and verify `node-pty` loads without dev tooling
+
+## Merged PRs
+
+| PR  | Title                                    | Notes                                               |
+| --- | ---------------------------------------- | --------------------------------------------------- |
+| #1  | `docs: complete foundation ADRs`         | ADR completion and repo hygiene                     |
+| #2  | `feat: add default launcher templates`   | default MVP templates and safe renderer             |
+| #3  | `feat: add Windows PTY spike foundation` | `NodePtyBroker`, tests, xterm spike, upstream notes |
+
+## Upstream cmux translation context
+
+The upstream macOS cmux repo is available for research only at `C:/cmux/reference/cmux.git`.
+
+Useful upstream files inspected:
+
+- `docs/cli-contract.md`
+- `docs/events.md`
+- `docs/notifications.md`
+- `docs/remote-daemon-spec.md`
+- `skills/cmux/references/panes-surfaces.md`
+- `daemon/remote/cmd/cmuxd-remote/ws_pty.go`
+- `webviews/src/agent-session/shared/sessionModel.ts`
+
+Translation principles:
+
+- preserve useful product concepts, not macOS implementation details
+- keep stable workspace/session/surface identity ideas
+- keep event streams replayable/cursor-friendly later
+- keep transcript/log output bounded
+- defer full pane/surface parity until the local Windows PTY/session supervisor is reliable
+
+## Recommended next PR
+
+Wire a real local terminal through secure Electron IPC:
+
+1. Add main-process `TerminalService` that owns `NodePtyBroker`.
+2. Add IPC contracts for terminal create/write/resize/close and output events.
+3. Expose only typed preload bridge methods.
+4. Attach renderer `TerminalSpike` to backend output.
+5. Add tests for IPC payload validation and service lifecycle where practical.
+6. Keep transcript persistence out of this PR unless needed for bounded scrollback.
+
+## Known caveats
+
+- `node-pty` is optional and may not build/load until pnpm build scripts are approved.
+- The app currently renders an xterm.js spike surface but does not yet attach it to a real PTY.
+- Phase 1 is not done until manual Windows PTY and packaging gates pass.

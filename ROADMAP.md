@@ -2,6 +2,8 @@
 
 ## Phase 0: Repository and Architecture Foundation
 
+Status: **complete enough for Phase 1 work**
+
 - Monorepo skeleton.
 - Architecture, security, roadmap, and decision docs.
 - TypeScript strict mode.
@@ -12,11 +14,14 @@
 
 ## Phase 1: Windows PTY Spike / Terminal Foundation
 
+Status: **in progress; manual Windows/native packaging gates not passed yet**
+
 - xterm.js terminal view. Started with secure renderer spike surface.
 - node-pty ConPTY backend. Started with optional `NodePtyBroker` runtime boundary.
 - TerminalService state machine.
 - Spawn/write/resize/close lifecycle. Started in `@cmux/pty` with tests.
 - Bounded in-memory scrollback.
+- Secure IPC wiring from main-process PTY broker to renderer terminal surface.
 - Packaged dev build proving native PTY loading.
 
 ## Phase 2: Agent Session Supervisor MVP Core

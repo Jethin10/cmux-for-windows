@@ -141,7 +141,7 @@ Implemented:
 
 Still required:
 
-- pane split/move model beyond the current ordered surface list
+- split-pane UI wiring beyond the core split layout model
 - richer batch launch presets and per-agent prompt editing
 - named-pipe transport and response streaming for CLI envelopes
 - richer approval execution hooks and Git/browser actions

@@ -1,0 +1,27 @@
+appId: com.cmux.windows
+productName: CMux for Windows
+artifactName: "${productName}-${version}-${os}-${arch}.${ext}"
+directories:
+  output: release
+files:
+  - from: dist
+    to: dist
+  - from: package.json
+    to: package.json
+asar: true
+asarUnpack:
+  - "**/node_modules/node-pty/**"
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  signAndEditExecutable: false
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+npmRebuild: true
+buildDependenciesFromSource: false

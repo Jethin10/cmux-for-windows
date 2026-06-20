@@ -66,4 +66,4 @@ Status: **started with panes/surfaces and CLI/API foundations**
 - Git workflow foundation. Started with porcelain v2 status parsing, summary formatting, and dashboard status refresh through IPC.
 - Approval foundation. Started with approval request lifecycle, risk inference helpers, persisted records, and dashboard approve/deny flow.
 - Browser surface foundation. Started with safe URL normalization, typed IPC/preload opening, and dashboard pane rendering for http/https-only browser surfaces.
-- Release hardening. Started with native PTY smoke script and release gate checklist.
+- Release hardening. Started with native PTY smoke script, Windows installer config, and release gate checklist.

@@ -36,6 +36,7 @@ Implemented:
 - architecture/security/roadmap docs
 - ADRs 0001–0007
 - SQLite migration framework abstraction and tests
+- SQLite schema coverage for notifications, approvals, pane layouts, and transcript records
 - terminal/agent state-machine tests
 - default agent/shell launcher templates and tests
 
@@ -93,7 +94,7 @@ Implemented:
 
 Still required before Phase 3 can be considered complete:
 
-- migrate file-backed persistence to the planned SQLite repository layer
+- implement the runtime SQLite repository adapter and migrate desktop wiring off file-backed storage
 - add transcript reads attached to a selected session terminal view
 - add robust transcript write serialization/backpressure and crash-safe atomic persistence
 - add search indexing instead of linear JSONL scans

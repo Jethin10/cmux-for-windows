@@ -9,7 +9,7 @@ Status: **complete enough for Phase 1 work**
 - TypeScript strict mode.
 - Lint/format/test tooling.
 - Basic Electron app boot.
-- SQLite migration framework abstraction.
+- SQLite migration framework abstraction, with schema coverage for supervisor snapshots, approvals, notifications, pane layouts, and transcript records.
 - Typed IPC contract package.
 
 ## Phase 1: Windows PTY Spike / Terminal Foundation

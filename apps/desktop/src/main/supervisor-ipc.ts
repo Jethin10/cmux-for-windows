@@ -7,6 +7,8 @@ import {
   assertAgentListRequest,
   assertAgentRestartRequest,
   assertAgentStopRequest,
+  assertApprovalListRequest,
+  assertApprovalResolveRequest,
   assertBrowserSurfaceOpenRequest,
   assertGitStatusRequest,
   assertNotificationListRequest,
@@ -27,6 +29,8 @@ import {
   type AgentListRequest,
   type AgentRestartRequest,
   type AgentStopRequest,
+  type ApprovalListRequest,
+  type ApprovalResolveRequest,
   type BrowserSurfaceOpenRequest,
   type GitStatusRequest,
   type NotificationListRequest,
@@ -126,6 +130,23 @@ export function registerSupervisorIpc(
     );
   });
 
+  ipcMain.handle(ipcChannels.approvalList, async (_event, payload: unknown) => {
+    assertApprovalListRequest(payload);
+    return (await getSupervisorService()).listApprovals(
+      (payload as ApprovalListRequest).workspaceId,
+    );
+  });
+
+  ipcMain.handle(ipcChannels.approvalResolve, async (_event, payload: unknown) => {
+    assertApprovalResolveRequest(payload);
+    const request = payload as ApprovalResolveRequest;
+    return (await getSupervisorService()).resolveApprovalRequest(
+      request.approvalId,
+      request.status,
+      request.resolvedBy,
+    );
+  });
+
   ipcMain.handle(ipcChannels.gitStatus, async (_event, payload: unknown) => {
     assertGitStatusRequest(payload);
     const supervisor = await getSupervisorService();
@@ -194,6 +215,8 @@ export function registerSupervisorIpc(
     ipcMain.removeHandler(ipcChannels.notificationList);
     ipcMain.removeHandler(ipcChannels.notificationMarkRead);
     ipcMain.removeHandler(ipcChannels.notificationNextUnread);
+    ipcMain.removeHandler(ipcChannels.approvalList);
+    ipcMain.removeHandler(ipcChannels.approvalResolve);
     ipcMain.removeHandler(ipcChannels.gitStatus);
     ipcMain.removeHandler(ipcChannels.browserSurfaceOpen);
     ipcMain.removeHandler(ipcChannels.paneLayoutGet);

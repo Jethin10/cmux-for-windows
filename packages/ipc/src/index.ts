@@ -29,6 +29,8 @@ export const ipcChannels = {
   notificationMarkRead: `${IPC_NAMESPACE}:notification:mark-read`,
   notificationNextUnread: `${IPC_NAMESPACE}:notification:next-unread`,
   gitStatus: `${IPC_NAMESPACE}:git:status`,
+  approvalList: `${IPC_NAMESPACE}:approval:list`,
+  approvalResolve: `${IPC_NAMESPACE}:approval:resolve`,
   browserSurfaceOpen: `${IPC_NAMESPACE}:browser-surface:open`,
   paneLayoutGet: `${IPC_NAMESPACE}:pane-layout:get`,
   paneSurfaceOpen: `${IPC_NAMESPACE}:pane-surface:open`,
@@ -155,6 +157,32 @@ export interface NotificationNextUnreadRequest {
   workspaceId: WorkspaceId;
 }
 
+export type ApprovalStatus = "pending" | "approved" | "denied" | "expired";
+export type ApprovalRisk = "low" | "medium" | "high";
+
+export interface ApprovalRequestRecord {
+  id: string;
+  workspaceId: WorkspaceId;
+  agentSessionId: AgentSessionId;
+  title: string;
+  body: string;
+  risk: ApprovalRisk;
+  status: ApprovalStatus;
+  createdAt: string;
+  resolvedAt?: string;
+  resolvedBy?: string;
+}
+
+export interface ApprovalListRequest {
+  workspaceId: WorkspaceId;
+}
+
+export interface ApprovalResolveRequest {
+  approvalId: string;
+  status: "approved" | "denied";
+  resolvedBy?: string;
+}
+
 export interface GitStatusRequest {
   workspaceId: WorkspaceId;
 }
@@ -273,6 +301,11 @@ export interface IpcContracts {
     response: AgentSession | undefined;
   };
   [ipcChannels.gitStatus]: { request: GitStatusRequest; response: GitStatusResponse };
+  [ipcChannels.approvalList]: { request: ApprovalListRequest; response: ApprovalRequestRecord[] };
+  [ipcChannels.approvalResolve]: {
+    request: ApprovalResolveRequest;
+    response: ApprovalRequestRecord;
+  };
   [ipcChannels.browserSurfaceOpen]: {
     request: BrowserSurfaceOpenRequest;
     response: PaneLayoutState;
@@ -428,6 +461,26 @@ export function assertNotificationNextUnreadRequest(
   if (!isRecord(value)) throw new Error("notification.nextUnread request must be an object");
   const candidate = value as Partial<NotificationNextUnreadRequest>;
   assertWorkspaceId(candidate.workspaceId, "notification.nextUnread workspaceId");
+}
+
+export function assertApprovalListRequest(value: unknown): asserts value is ApprovalListRequest {
+  if (!isRecord(value)) throw new Error("approval.list request must be an object");
+  const candidate = value as Partial<ApprovalListRequest>;
+  assertWorkspaceId(candidate.workspaceId, "approval.list workspaceId");
+}
+
+export function assertApprovalResolveRequest(
+  value: unknown,
+): asserts value is ApprovalResolveRequest {
+  if (!isRecord(value)) throw new Error("approval.resolve request must be an object");
+  const candidate = value as Partial<ApprovalResolveRequest>;
+  assertNonEmptyString(candidate.approvalId, "approval.resolve approvalId");
+  if (candidate.status !== "approved" && candidate.status !== "denied") {
+    throw new Error("approval.resolve status must be approved or denied");
+  }
+  if (candidate.resolvedBy !== undefined) {
+    assertNonEmptyString(candidate.resolvedBy, "approval.resolve resolvedBy");
+  }
 }
 
 export function assertGitStatusRequest(value: unknown): asserts value is GitStatusRequest {

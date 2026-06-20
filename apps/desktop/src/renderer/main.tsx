@@ -1,7 +1,7 @@
 import { StrictMode, useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { defaultTemplates } from "@cmux/core";
-import type { GitStatusResponse, TranscriptSearchResult } from "@cmux/ipc";
+import type { ApprovalRequestRecord, GitStatusResponse, TranscriptSearchResult } from "@cmux/ipc";
 import type {
   AgentSession,
   Notification,
@@ -26,6 +26,7 @@ function App() {
   const [gitStatus, setGitStatus] = useState<GitStatusResponse | undefined>();
   const [browserUrl, setBrowserUrl] = useState<string>("https://example.com");
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [approvals, setApprovals] = useState<ApprovalRequestRecord[]>([]);
   const [paneLayout, setPaneLayout] = useState<PaneLayoutState>({ surfaces: [] });
   const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>();
   const [templateId, setTemplateId] = useState<string>(String(defaultTemplates[0]?.id ?? ""));
@@ -64,6 +65,7 @@ function App() {
       setAgents([]);
       setPaneLayout({ surfaces: [] });
       setGitStatus(undefined);
+      setApprovals([]);
       return;
     }
     void refreshAgents(activeWorkspaceId);
@@ -84,6 +86,7 @@ function App() {
     setAgents(nextAgents);
     setHistory(nextHistory);
     setNotifications(await window.cmux.notification.list({ workspaceId: workspaceIdValue }));
+    setApprovals(await window.cmux.approval.list({ workspaceId: workspaceIdValue }));
     setPaneLayout(await window.cmux.paneLayout.get({ workspaceId: workspaceIdValue }));
     try {
       setGitStatus(await window.cmux.git.status({ workspaceId: workspaceIdValue }));
@@ -437,6 +440,61 @@ function App() {
             </li>
           ))}
           {notifications.length === 0 ? <li>No notifications yet.</li> : null}
+        </ul>
+      </section>
+
+      <section className="panel session-panel">
+        <div className="panel-heading">
+          <h2>Approvals</h2>
+          <button
+            disabled={!activeWorkspace}
+            onClick={() => activeWorkspace && void refreshAgents(activeWorkspace.id)}
+          >
+            Refresh
+          </button>
+        </div>
+        <ul className="session-list">
+          {approvals.map((approval) => (
+            <li key={approval.id} className="session-card">
+              <div>
+                <strong>
+                  {approval.title} · {approval.risk} · {approval.status}
+                </strong>
+                <p>{approval.body}</p>
+              </div>
+              <div className="session-actions">
+                <button
+                  disabled={approval.status !== "pending"}
+                  onClick={() =>
+                    void runAction(async () => {
+                      await window.cmux.approval.resolve({
+                        approvalId: approval.id,
+                        status: "approved",
+                      });
+                      if (activeWorkspace) await refreshAgents(activeWorkspace.id);
+                    })
+                  }
+                >
+                  Approve
+                </button>
+                <button
+                  disabled={approval.status !== "pending"}
+                  onClick={() =>
+                    void runAction(async () => {
+                      await window.cmux.approval.resolve({
+                        approvalId: approval.id,
+                        status: "denied",
+                      });
+                      if (activeWorkspace) await refreshAgents(activeWorkspace.id);
+                    })
+                  }
+                >
+                  Deny
+                </button>
+              </div>
+            </li>
+          ))}
+          {approvals.length === 0 ? <li>No approval requests yet.</li> : null}
         </ul>
       </section>
 

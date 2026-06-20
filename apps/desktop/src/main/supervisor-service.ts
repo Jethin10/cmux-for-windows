@@ -4,11 +4,15 @@ import {
   defaultTemplates,
   detectAgentAttention,
   closeSurface,
+  createApprovalRequest,
   createBrowserSurface,
   findDefaultTemplate,
   focusSurface,
+  inferApprovalRisk,
   openSurface,
   reorderSurface,
+  resolveApproval,
+  type ApprovalRequest,
   type ReorderSurfaceOptions,
   renderTemplate,
 } from "@cmux/core";
@@ -30,6 +34,7 @@ import type {
   AgentBatchLaunchRequest,
   AgentBatchLaunchResponse,
   AgentLaunchRequest,
+  ApprovalRequestRecord,
   AgentStopRequest,
   TerminalCloseMode,
   TranscriptSearchRequest,
@@ -76,6 +81,7 @@ export class SupervisorService {
   private readonly workspacesByRoot = new Map<string, WorkspaceId>();
   private readonly agents = new Map<AgentSessionId, AgentSession>();
   private readonly notifications = new Map<NotificationId, CmuxNotification>();
+  private readonly approvals = new Map<string, ApprovalRequestRecord>();
   private readonly paneLayouts = new Map<WorkspaceId, PaneLayoutState>();
   private readonly runtimes = new Map<AgentSessionId, AgentRuntime>();
   private readonly templates: readonly Template[];
@@ -211,6 +217,25 @@ export class SupervisorService {
     const notification = this.listNotifications(workspaceId).find((candidate) => !candidate.read);
     if (!notification?.agentSessionId) return undefined;
     return this.agents.get(notification.agentSessionId);
+  }
+
+  listApprovals(workspaceId: WorkspaceId): ApprovalRequestRecord[] {
+    this.requireWorkspace(workspaceId);
+    return [...this.approvals.values()]
+      .filter((approval) => approval.workspaceId === workspaceId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  resolveApprovalRequest(
+    approvalId: string,
+    status: "approved" | "denied",
+    resolvedBy = "local-user",
+  ): ApprovalRequestRecord {
+    const current = this.approvals.get(approvalId);
+    if (!current) throw new Error(`Unknown approval request: ${approvalId}`);
+    const resolved = resolveApproval(current, status, resolvedBy) as ApprovalRequestRecord;
+    this.approvals.set(approvalId, resolved);
+    return resolved;
   }
 
   getPaneLayout(workspaceId: WorkspaceId): PaneLayoutState {
@@ -458,11 +483,9 @@ export class SupervisorService {
           .catch((error: unknown) => console.error("Failed to persist transcript output", error));
         const detection = detectAgentAttention(event.data);
         if (detection.status !== "running" && current.status !== detection.status) {
-          this.createAttentionNotification(
-            current,
-            detection.status,
-            detection.reason ?? event.data,
-          );
+          const reason = detection.reason ?? event.data;
+          this.createAttentionNotification(current, detection.status, reason);
+          if (detection.status === "waiting") this.createApprovalForAgent(current, reason);
         }
         this.updateAgent(agentId, {
           status: detection.status,
@@ -525,6 +548,33 @@ export class SupervisorService {
       findDefaultTemplate(templateId);
     if (!template) throw new Error(`Unknown template: ${templateId}`);
     return template;
+  }
+
+  private createApprovalForAgent(agent: AgentSession, body: string): ApprovalRequestRecord {
+    const existingPending = [...this.approvals.values()].find(
+      (approval) => approval.agentSessionId === agent.id && approval.status === "pending",
+    );
+    if (existingPending) return existingPending;
+
+    const approval = createApprovalRequest({
+      id: randomUUID(),
+      agentSessionId: agent.id,
+      title: `${agent.title} approval requested`,
+      body: body.slice(0, 1000),
+      risk: inferApprovalRisk(body),
+    }) as ApprovalRequest;
+    const record: ApprovalRequestRecord = {
+      id: approval.id,
+      workspaceId: agent.workspaceId,
+      agentSessionId: agent.id,
+      title: approval.title,
+      body: approval.body,
+      risk: approval.risk,
+      status: approval.status,
+      createdAt: approval.createdAt,
+    };
+    this.approvals.set(record.id, record);
+    return record;
   }
 
   private createAttentionNotification(

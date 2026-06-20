@@ -8,7 +8,7 @@ import type {
   Workspace,
   WorkspaceId,
 } from "@cmux/shared";
-import type { TranscriptSearchResult } from "@cmux/ipc";
+import type { ApprovalRequestRecord, TranscriptSearchResult } from "@cmux/ipc";
 
 export interface PersistedPaneLayout {
   workspaceId: WorkspaceId;
@@ -19,6 +19,7 @@ export interface SupervisorSnapshot {
   workspaces: Workspace[];
   agents: AgentSession[];
   notifications?: Notification[];
+  approvals?: ApprovalRequestRecord[];
   paneLayouts?: PersistedPaneLayout[];
 }
 
@@ -76,13 +77,16 @@ export class FileSupervisorStore implements SupervisorStore {
         notifications: Array.isArray(parsed.notifications)
           ? (parsed.notifications as Notification[])
           : [],
+        approvals: Array.isArray(parsed.approvals)
+          ? (parsed.approvals as ApprovalRequestRecord[])
+          : [],
         paneLayouts: Array.isArray(parsed.paneLayouts)
           ? (parsed.paneLayouts as PersistedPaneLayout[])
           : [],
       };
     } catch (error) {
       if (isNodeError(error) && error.code === "ENOENT") {
-        return { workspaces: [], agents: [], notifications: [], paneLayouts: [] };
+        return { workspaces: [], agents: [], notifications: [], approvals: [], paneLayouts: [] };
       }
       throw error;
     }
@@ -93,6 +97,7 @@ export class FileSupervisorStore implements SupervisorStore {
       workspaces: snapshot.workspaces.map((workspace) => ({ ...workspace })),
       agents: snapshot.agents.map((agent) => ({ ...agent })),
       notifications: snapshot.notifications?.map((notification) => ({ ...notification })) ?? [],
+      approvals: snapshot.approvals?.map((approval) => ({ ...approval })) ?? [],
       paneLayouts:
         snapshot.paneLayouts?.map((entry) => ({
           workspaceId: entry.workspaceId,

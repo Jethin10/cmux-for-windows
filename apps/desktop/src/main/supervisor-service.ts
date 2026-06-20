@@ -117,6 +117,7 @@ export class SupervisorService {
     this.workspacesByRoot.clear();
     this.agents.clear();
     this.notifications.clear();
+    this.approvals.clear();
     this.paneLayouts.clear();
     for (const workspace of snapshot.workspaces) {
       this.workspaces.set(workspace.id, workspace);
@@ -125,6 +126,11 @@ export class SupervisorService {
     for (const agent of snapshot.agents) this.agents.set(agent.id, agent);
     for (const notification of snapshot.notifications ?? []) {
       this.notifications.set(notification.id, notification);
+    }
+    for (const approval of snapshot.approvals ?? []) {
+      if (this.workspaces.has(approval.workspaceId) && this.agents.has(approval.agentSessionId)) {
+        this.approvals.set(approval.id, approval);
+      }
     }
     for (const entry of snapshot.paneLayouts ?? []) {
       if (this.workspaces.has(entry.workspaceId)) {
@@ -235,6 +241,7 @@ export class SupervisorService {
     if (!current) throw new Error(`Unknown approval request: ${approvalId}`);
     const resolved = resolveApproval(current, status, resolvedBy) as ApprovalRequestRecord;
     this.approvals.set(approvalId, resolved);
+    void this.persistSnapshot();
     return resolved;
   }
 
@@ -574,6 +581,7 @@ export class SupervisorService {
       createdAt: approval.createdAt,
     };
     this.approvals.set(record.id, record);
+    void this.persistSnapshot();
     return record;
   }
 
@@ -630,6 +638,7 @@ export class SupervisorService {
         workspaces: [...this.workspaces.values()],
         agents: [...this.agents.values()],
         notifications: [...this.notifications.values()],
+        approvals: [...this.approvals.values()],
         paneLayouts: [...this.paneLayouts.entries()].map(([workspaceId, layout]) => ({
           workspaceId,
           layout: copyPaneLayout(layout),

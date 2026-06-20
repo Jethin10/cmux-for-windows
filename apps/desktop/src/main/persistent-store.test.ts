@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
-import type { TerminalSessionId, WorkspaceId } from "@cmux/shared";
+import type { AgentSessionId, TerminalSessionId, WorkspaceId } from "@cmux/shared";
 import { FileSupervisorStore } from "./persistent-store.js";
 
 const tempDirs: string[] = [];
@@ -35,6 +35,18 @@ describe("FileSupervisorStore", () => {
         },
       ],
       agents: [],
+      approvals: [
+        {
+          id: "approval-1",
+          workspaceId: "workspace-1" as WorkspaceId,
+          agentSessionId: "agent-1" as AgentSessionId,
+          title: "Approve",
+          body: "Proceed?",
+          risk: "low",
+          status: "pending",
+          createdAt: "2026-06-20T00:00:00.000Z",
+        },
+      ],
       paneLayouts: [
         {
           workspaceId: "workspace-1" as WorkspaceId,
@@ -49,6 +61,7 @@ describe("FileSupervisorStore", () => {
     await expect(store.loadSnapshot()).resolves.toMatchObject({
       workspaces: [{ id: "workspace-1", rootPath: "C:/repo" }],
       agents: [],
+      approvals: [{ id: "approval-1", status: "pending" }],
       paneLayouts: [
         {
           workspaceId: "workspace-1",

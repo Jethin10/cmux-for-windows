@@ -1,9 +1,28 @@
 import { describe, expect, it, vi } from "vitest";
-import type { TerminalSessionId } from "@cmux/shared";
-import type { TerminalCloseMode } from "@cmux/ipc";
+import type { PaneLayoutState, TerminalSessionId } from "@cmux/shared";
+import type { TerminalCloseMode, TranscriptSearchResult } from "@cmux/ipc";
 import type { TerminalExitEvent, TerminalOutputEvent, TerminalSubscription } from "@cmux/pty";
 import type { CreateProcessTerminalRequest } from "./terminal-service.js";
+import type { SupervisorSnapshot, SupervisorStore, TranscriptRecord } from "./persistent-store.js";
 import { SupervisorService, type SupervisorTerminalService } from "./supervisor-service.js";
+
+class MemoryStore implements SupervisorStore {
+  snapshot: SupervisorSnapshot = { workspaces: [], agents: [], notifications: [], paneLayouts: [] };
+
+  async loadSnapshot(): Promise<SupervisorSnapshot> {
+    return this.snapshot;
+  }
+
+  async saveSnapshot(snapshot: SupervisorSnapshot): Promise<void> {
+    this.snapshot = snapshot;
+  }
+
+  async appendTranscript(_record: TranscriptRecord): Promise<void> {}
+
+  async searchTranscripts(): Promise<TranscriptSearchResult[]> {
+    return [];
+  }
+}
 
 class FakeTerminalService implements SupervisorTerminalService {
   readonly createRequests: CreateProcessTerminalRequest[] = [];
@@ -145,6 +164,37 @@ describe("SupervisorService", () => {
       exitCode: 1,
     });
     expect(service.listAgents(workspace.id)[0]).toMatchObject({ status: "failed" });
+  });
+
+  it("opens, focuses, closes, and restores persisted pane layouts", async () => {
+    const store = new MemoryStore();
+    const service = new SupervisorService(new FakeTerminalService(), undefined, store);
+    const workspace = service.openWorkspace({ rootPath: "C:/repo", trusted: true });
+
+    expect(service.getPaneLayout(workspace.id)).toEqual({ surfaces: [] });
+    expect(
+      service.openPaneSurface(workspace.id, {
+        id: "surface-agent-1",
+        kind: "agent-terminal",
+        title: "Pi",
+        terminalSessionId: "terminal-1" as TerminalSessionId,
+      }),
+    ).toMatchObject({ activeSurfaceId: "surface-agent-1" });
+    service.openPaneSurface(workspace.id, {
+      id: "surface-log-1",
+      kind: "transcript",
+      title: "Log",
+    });
+    expect(service.focusPaneSurface(workspace.id, "surface-agent-1")).toMatchObject({
+      activeSurfaceId: "surface-agent-1",
+    });
+    const afterClose = service.closePaneSurface(workspace.id, "surface-agent-1");
+    expect(afterClose).toMatchObject({ activeSurfaceId: "surface-log-1" });
+    await new Promise<void>((resolve) => setImmediate(resolve));
+
+    const restored = new SupervisorService(new FakeTerminalService(), undefined, store);
+    await restored.restore();
+    expect(restored.getPaneLayout(workspace.id)).toEqual(afterClose as PaneLayoutState);
   });
 
   it("stops, restarts, and archives agent sessions", async () => {

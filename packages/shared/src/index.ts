@@ -7,6 +7,21 @@ export type TemplateId = Brand<string, "TemplateId">;
 export type NotificationId = Brand<string, "NotificationId">;
 export type DomainEventId = Brand<string, "DomainEventId">;
 
+export type PaneSurfaceKind = "local-terminal" | "agent-terminal" | "transcript" | "browser";
+
+export interface PaneSurface {
+  id: string;
+  kind: PaneSurfaceKind;
+  title: string;
+  agentSessionId?: AgentSessionId;
+  terminalSessionId?: TerminalSessionId;
+}
+
+export interface PaneLayoutState {
+  surfaces: readonly PaneSurface[];
+  activeSurfaceId?: string;
+}
+
 export type AgentProvider =
   | "pi"
   | "claude-code"

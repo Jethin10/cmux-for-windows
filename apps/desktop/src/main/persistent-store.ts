@@ -3,16 +3,23 @@ import { dirname, join } from "node:path";
 import type {
   AgentSession,
   Notification,
+  PaneLayoutState,
   TerminalSessionId,
   Workspace,
   WorkspaceId,
 } from "@cmux/shared";
 import type { TranscriptSearchResult } from "@cmux/ipc";
 
+export interface PersistedPaneLayout {
+  workspaceId: WorkspaceId;
+  layout: PaneLayoutState;
+}
+
 export interface SupervisorSnapshot {
   workspaces: Workspace[];
   agents: AgentSession[];
   notifications?: Notification[];
+  paneLayouts?: PersistedPaneLayout[];
 }
 
 export interface TranscriptRecord {
@@ -69,9 +76,14 @@ export class FileSupervisorStore implements SupervisorStore {
         notifications: Array.isArray(parsed.notifications)
           ? (parsed.notifications as Notification[])
           : [],
+        paneLayouts: Array.isArray(parsed.paneLayouts)
+          ? (parsed.paneLayouts as PersistedPaneLayout[])
+          : [],
       };
     } catch (error) {
-      if (isNodeError(error) && error.code === "ENOENT") return { workspaces: [], agents: [] };
+      if (isNodeError(error) && error.code === "ENOENT") {
+        return { workspaces: [], agents: [], notifications: [], paneLayouts: [] };
+      }
       throw error;
     }
   }
@@ -81,6 +93,11 @@ export class FileSupervisorStore implements SupervisorStore {
       workspaces: snapshot.workspaces.map((workspace) => ({ ...workspace })),
       agents: snapshot.agents.map((agent) => ({ ...agent })),
       notifications: snapshot.notifications?.map((notification) => ({ ...notification })) ?? [],
+      paneLayouts:
+        snapshot.paneLayouts?.map((entry) => ({
+          workspaceId: entry.workspaceId,
+          layout: copyPaneLayout(entry.layout),
+        })) ?? [],
     };
     this.saveQueue = this.saveQueue.then(
       () => this.writeSnapshot(snapshotCopy),
@@ -156,6 +173,13 @@ export class FileSupervisorStore implements SupervisorStore {
   private transcriptPath(terminalSessionId: TerminalSessionId): string {
     return join(this.transcriptDir, `${encodeURIComponent(terminalSessionId)}.jsonl`);
   }
+}
+
+function copyPaneLayout(layout: PaneLayoutState): PaneLayoutState {
+  return {
+    surfaces: layout.surfaces.map((surface) => ({ ...surface })),
+    ...(layout.activeSurfaceId ? { activeSurfaceId: layout.activeSurfaceId } : {}),
+  };
 }
 
 function parseTranscriptRecord(line: string): TranscriptRecord | undefined {

@@ -57,7 +57,7 @@ Status: **started with heuristic notifications**
 
 Status: **started with panes/surfaces and CLI/API foundations**
 
-- Pane/surface model. Started with core pane layout helpers and tests.
+- Pane/surface model. Started with core pane layout helpers, backend-owned persisted layout state, typed IPC, and tests.
 - Agent terminal surfaces. Started with an attachable live xterm.js surface for selected agent sessions.
 - Multi-pane dashboard. Started with a local shell pane beside an agent session pane.
 - Renderer bundle hardening. Started with Vite manual chunks for React and xterm.

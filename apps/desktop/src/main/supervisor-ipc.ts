@@ -9,6 +9,10 @@ import {
   assertNotificationListRequest,
   assertNotificationMarkReadRequest,
   assertNotificationNextUnreadRequest,
+  assertPaneLayoutGetRequest,
+  assertPaneSurfaceCloseRequest,
+  assertPaneSurfaceFocusRequest,
+  assertPaneSurfaceOpenRequest,
   assertTranscriptSearchRequest,
   assertWorkspaceOpenRequest,
   ipcChannels,
@@ -21,6 +25,10 @@ import {
   type NotificationListRequest,
   type NotificationMarkReadRequest,
   type NotificationNextUnreadRequest,
+  type PaneLayoutGetRequest,
+  type PaneSurfaceCloseRequest,
+  type PaneSurfaceFocusRequest,
+  type PaneSurfaceOpenRequest,
   type TranscriptSearchRequest,
   type WorkspaceOpenRequest,
 } from "@cmux/ipc";
@@ -103,6 +111,31 @@ export function registerSupervisorIpc(
     );
   });
 
+  ipcMain.handle(ipcChannels.paneLayoutGet, async (_event, payload: unknown) => {
+    assertPaneLayoutGetRequest(payload);
+    return (await getSupervisorService()).getPaneLayout(
+      (payload as PaneLayoutGetRequest).workspaceId,
+    );
+  });
+
+  ipcMain.handle(ipcChannels.paneSurfaceOpen, async (_event, payload: unknown) => {
+    assertPaneSurfaceOpenRequest(payload);
+    const request = payload as PaneSurfaceOpenRequest;
+    return (await getSupervisorService()).openPaneSurface(request.workspaceId, request.surface);
+  });
+
+  ipcMain.handle(ipcChannels.paneSurfaceFocus, async (_event, payload: unknown) => {
+    assertPaneSurfaceFocusRequest(payload);
+    const request = payload as PaneSurfaceFocusRequest;
+    return (await getSupervisorService()).focusPaneSurface(request.workspaceId, request.surfaceId);
+  });
+
+  ipcMain.handle(ipcChannels.paneSurfaceClose, async (_event, payload: unknown) => {
+    assertPaneSurfaceCloseRequest(payload);
+    const request = payload as PaneSurfaceCloseRequest;
+    return (await getSupervisorService()).closePaneSurface(request.workspaceId, request.surfaceId);
+  });
+
   return () => {
     ipcMain.removeHandler(ipcChannels.workspaceList);
     ipcMain.removeHandler(ipcChannels.workspaceOpen);
@@ -116,5 +149,9 @@ export function registerSupervisorIpc(
     ipcMain.removeHandler(ipcChannels.notificationList);
     ipcMain.removeHandler(ipcChannels.notificationMarkRead);
     ipcMain.removeHandler(ipcChannels.notificationNextUnread);
+    ipcMain.removeHandler(ipcChannels.paneLayoutGet);
+    ipcMain.removeHandler(ipcChannels.paneSurfaceOpen);
+    ipcMain.removeHandler(ipcChannels.paneSurfaceFocus);
+    ipcMain.removeHandler(ipcChannels.paneSurfaceClose);
   };
 }

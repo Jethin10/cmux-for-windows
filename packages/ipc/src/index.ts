@@ -28,6 +28,7 @@ export const ipcChannels = {
   notificationList: `${IPC_NAMESPACE}:notification:list`,
   notificationMarkRead: `${IPC_NAMESPACE}:notification:mark-read`,
   notificationNextUnread: `${IPC_NAMESPACE}:notification:next-unread`,
+  gitStatus: `${IPC_NAMESPACE}:git:status`,
   paneLayoutGet: `${IPC_NAMESPACE}:pane-layout:get`,
   paneSurfaceOpen: `${IPC_NAMESPACE}:pane-surface:open`,
   paneSurfaceFocus: `${IPC_NAMESPACE}:pane-surface:focus`,
@@ -153,6 +154,22 @@ export interface NotificationNextUnreadRequest {
   workspaceId: WorkspaceId;
 }
 
+export interface GitStatusRequest {
+  workspaceId: WorkspaceId;
+}
+
+export interface GitStatusResponse {
+  workspaceId: WorkspaceId;
+  summary: string;
+  branch?: string;
+  ahead: number;
+  behind: number;
+  staged: number;
+  unstaged: number;
+  untracked: number;
+  conflicted: number;
+}
+
 export interface PaneLayoutGetRequest {
   workspaceId: WorkspaceId;
 }
@@ -248,6 +265,7 @@ export interface IpcContracts {
     request: NotificationNextUnreadRequest;
     response: AgentSession | undefined;
   };
+  [ipcChannels.gitStatus]: { request: GitStatusRequest; response: GitStatusResponse };
   [ipcChannels.paneLayoutGet]: { request: PaneLayoutGetRequest; response: PaneLayoutState };
   [ipcChannels.paneSurfaceOpen]: { request: PaneSurfaceOpenRequest; response: PaneLayoutState };
   [ipcChannels.paneSurfaceFocus]: { request: PaneSurfaceFocusRequest; response: PaneLayoutState };
@@ -399,6 +417,12 @@ export function assertNotificationNextUnreadRequest(
   if (!isRecord(value)) throw new Error("notification.nextUnread request must be an object");
   const candidate = value as Partial<NotificationNextUnreadRequest>;
   assertWorkspaceId(candidate.workspaceId, "notification.nextUnread workspaceId");
+}
+
+export function assertGitStatusRequest(value: unknown): asserts value is GitStatusRequest {
+  if (!isRecord(value)) throw new Error("git.status request must be an object");
+  const candidate = value as Partial<GitStatusRequest>;
+  assertWorkspaceId(candidate.workspaceId, "git.status workspaceId");
 }
 
 export function assertPaneLayoutGetRequest(value: unknown): asserts value is PaneLayoutGetRequest {

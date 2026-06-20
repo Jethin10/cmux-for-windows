@@ -1,7 +1,7 @@
 import { StrictMode, useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { defaultTemplates } from "@cmux/core";
-import type { TranscriptSearchResult } from "@cmux/ipc";
+import type { GitStatusResponse, TranscriptSearchResult } from "@cmux/ipc";
 import type {
   AgentSession,
   Notification,
@@ -23,6 +23,7 @@ function App() {
   const [history, setHistory] = useState<AgentSession[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchResults, setSearchResults] = useState<TranscriptSearchResult[]>([]);
+  const [gitStatus, setGitStatus] = useState<GitStatusResponse | undefined>();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [paneLayout, setPaneLayout] = useState<PaneLayoutState>({ surfaces: [] });
   const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>();
@@ -61,6 +62,7 @@ function App() {
     if (!activeWorkspaceId) {
       setAgents([]);
       setPaneLayout({ surfaces: [] });
+      setGitStatus(undefined);
       return;
     }
     void refreshAgents(activeWorkspaceId);
@@ -82,6 +84,11 @@ function App() {
     setHistory(nextHistory);
     setNotifications(await window.cmux.notification.list({ workspaceId: workspaceIdValue }));
     setPaneLayout(await window.cmux.paneLayout.get({ workspaceId: workspaceIdValue }));
+    try {
+      setGitStatus(await window.cmux.git.status({ workspaceId: workspaceIdValue }));
+    } catch {
+      setGitStatus(undefined);
+    }
     setSelectedAgentId((current) => {
       if (current && nextAgents.some((agent) => agent.id === current)) return current;
       return nextAgents.find((agent) => agent.terminalSessionId)?.id;
@@ -155,6 +162,24 @@ function App() {
           ))}
           {workspaces.length === 0 ? <p>No workspaces yet.</p> : null}
         </div>
+      </section>
+
+      <section className="panel supervisor-panel">
+        <div className="panel-heading">
+          <h2>Git</h2>
+          <button
+            disabled={!activeWorkspace}
+            onClick={() =>
+              activeWorkspace &&
+              void runAction(async () => {
+                setGitStatus(await window.cmux.git.status({ workspaceId: activeWorkspace.id }));
+              })
+            }
+          >
+            Refresh status
+          </button>
+        </div>
+        <p>{gitStatus?.summary ?? "Open a Git workspace and refresh status."}</p>
       </section>
 
       <section className="panel supervisor-panel">

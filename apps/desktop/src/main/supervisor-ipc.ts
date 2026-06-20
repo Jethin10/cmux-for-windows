@@ -7,6 +7,7 @@ import {
   assertAgentListRequest,
   assertAgentRestartRequest,
   assertAgentStopRequest,
+  assertGitStatusRequest,
   assertNotificationListRequest,
   assertNotificationMarkReadRequest,
   assertNotificationNextUnreadRequest,
@@ -25,6 +26,7 @@ import {
   type AgentListRequest,
   type AgentRestartRequest,
   type AgentStopRequest,
+  type GitStatusRequest,
   type NotificationListRequest,
   type NotificationMarkReadRequest,
   type NotificationNextUnreadRequest,
@@ -36,6 +38,7 @@ import {
   type TranscriptSearchRequest,
   type WorkspaceOpenRequest,
 } from "@cmux/ipc";
+import { GitService } from "./git-service.js";
 import type { SupervisorService } from "./supervisor-service.js";
 
 export type SupervisorServiceProvider = () => Promise<SupervisorService>;
@@ -43,6 +46,7 @@ export type SupervisorServiceProvider = () => Promise<SupervisorService>;
 export function registerSupervisorIpc(
   ipcMain: IpcMain,
   getSupervisorService: SupervisorServiceProvider,
+  gitService = new GitService(),
 ): () => void {
   ipcMain.handle(ipcChannels.workspaceList, async () => {
     return (await getSupervisorService()).listWorkspaces();
@@ -120,6 +124,12 @@ export function registerSupervisorIpc(
     );
   });
 
+  ipcMain.handle(ipcChannels.gitStatus, async (_event, payload: unknown) => {
+    assertGitStatusRequest(payload);
+    const supervisor = await getSupervisorService();
+    return gitService.getStatus(supervisor.getWorkspace((payload as GitStatusRequest).workspaceId));
+  });
+
   ipcMain.handle(ipcChannels.paneLayoutGet, async (_event, payload: unknown) => {
     assertPaneLayoutGetRequest(payload);
     return (await getSupervisorService()).getPaneLayout(
@@ -173,6 +183,7 @@ export function registerSupervisorIpc(
     ipcMain.removeHandler(ipcChannels.notificationList);
     ipcMain.removeHandler(ipcChannels.notificationMarkRead);
     ipcMain.removeHandler(ipcChannels.notificationNextUnread);
+    ipcMain.removeHandler(ipcChannels.gitStatus);
     ipcMain.removeHandler(ipcChannels.paneLayoutGet);
     ipcMain.removeHandler(ipcChannels.paneSurfaceOpen);
     ipcMain.removeHandler(ipcChannels.paneSurfaceFocus);

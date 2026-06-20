@@ -10,6 +10,8 @@ import {
   type AgentRestartRequest,
   type AgentStopRequest,
   type AppInfoResponse,
+  type GitStatusRequest,
+  type GitStatusResponse,
   type NotificationListRequest,
   type NotificationMarkReadRequest,
   type NotificationNextUnreadRequest,
@@ -60,6 +62,9 @@ export interface CmuxBridge {
     list(request: NotificationListRequest): Promise<Notification[]>;
     markRead(request: NotificationMarkReadRequest): Promise<Notification>;
     nextUnread(request: NotificationNextUnreadRequest): Promise<AgentSession | undefined>;
+  };
+  git: {
+    status(request: GitStatusRequest): Promise<GitStatusResponse>;
   };
   paneLayout: {
     get(request: PaneLayoutGetRequest): Promise<PaneLayoutState>;
@@ -123,6 +128,10 @@ const bridge: CmuxBridge = {
       ipcRenderer.invoke(ipcChannels.notificationNextUnread, request) as Promise<
         AgentSession | undefined
       >,
+  },
+  git: {
+    status: (request) =>
+      ipcRenderer.invoke(ipcChannels.gitStatus, request) as Promise<GitStatusResponse>,
   },
   paneLayout: {
     get: (request) =>

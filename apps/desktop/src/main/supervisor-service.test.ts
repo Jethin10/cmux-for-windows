@@ -204,6 +204,22 @@ describe("SupervisorService", () => {
     expect(service.listAgents(workspace.id)[0]).toMatchObject({ status: "failed" });
   });
 
+  it("opens browser surfaces with normalized safe URLs", () => {
+    const service = new SupervisorService(new FakeTerminalService());
+    const workspace = service.openWorkspace({ rootPath: "C:/repo", trusted: true });
+
+    const layout = service.openBrowserSurface(workspace.id, { url: "example.com" });
+
+    expect(layout.surfaces[0]).toMatchObject({
+      kind: "browser",
+      title: "example.com",
+      url: "https://example.com/",
+    });
+    expect(() => service.openBrowserSurface(workspace.id, { url: "file:///C:/secret" })).toThrow(
+      /Unsupported/,
+    );
+  });
+
   it("opens, focuses, closes, and restores persisted pane layouts", async () => {
     const store = new MemoryStore();
     const service = new SupervisorService(new FakeTerminalService(), undefined, store);

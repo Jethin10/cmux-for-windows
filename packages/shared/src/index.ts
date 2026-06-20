@@ -15,6 +15,7 @@ export interface PaneSurface {
   title: string;
   agentSessionId?: AgentSessionId;
   terminalSessionId?: TerminalSessionId;
+  url?: string;
 }
 
 export interface PaneLayoutState {

@@ -124,6 +124,14 @@ code {
   white-space: nowrap;
 }
 
+.browser-surface {
+  width: 100%;
+  min-height: 420px;
+  border: 0;
+  border-radius: 12px;
+  background: #020617;
+}
+
 .empty-surface {
   display: grid;
   place-items: center;

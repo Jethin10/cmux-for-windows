@@ -9,6 +9,10 @@ import {
   assertNotificationListRequest,
   assertNotificationMarkReadRequest,
   assertNotificationNextUnreadRequest,
+  assertPaneLayoutGetRequest,
+  assertPaneSurfaceCloseRequest,
+  assertPaneSurfaceFocusRequest,
+  assertPaneSurfaceOpenRequest,
   assertTranscriptSearchRequest,
   assertWorkspaceOpenRequest,
 } from "./index.js";
@@ -39,6 +43,25 @@ describe("workspace and agent IPC request validation", () => {
       assertNotificationMarkReadRequest({ notificationId: "notification-1" }),
     ).not.toThrow();
     expect(() => assertNotificationNextUnreadRequest({ workspaceId: "workspace-1" })).not.toThrow();
+    expect(() => assertPaneLayoutGetRequest({ workspaceId: "workspace-1" })).not.toThrow();
+    expect(() =>
+      assertPaneSurfaceOpenRequest({
+        workspaceId: "workspace-1",
+        surface: {
+          id: "surface-1",
+          kind: "agent-terminal",
+          title: "Pi",
+          agentSessionId: "agent-1",
+          terminalSessionId: "terminal-1",
+        },
+      }),
+    ).not.toThrow();
+    expect(() =>
+      assertPaneSurfaceFocusRequest({ workspaceId: "workspace-1", surfaceId: "surface-1" }),
+    ).not.toThrow();
+    expect(() =>
+      assertPaneSurfaceCloseRequest({ workspaceId: "workspace-1", surfaceId: "surface-1" }),
+    ).not.toThrow();
   });
 
   it("rejects malformed agent payloads", () => {
@@ -55,5 +78,15 @@ describe("workspace and agent IPC request validation", () => {
     expect(() => assertNotificationMarkReadRequest({ notificationId: "" })).toThrow(
       /notificationId/,
     );
+    expect(() => assertPaneLayoutGetRequest({ workspaceId: "" })).toThrow(/workspaceId/);
+    expect(() =>
+      assertPaneSurfaceOpenRequest({
+        workspaceId: "workspace-1",
+        surface: { id: "surface-1", kind: "native-view", title: "Bad" },
+      }),
+    ).toThrow(/kind/);
+    expect(() =>
+      assertPaneSurfaceFocusRequest({ workspaceId: "workspace-1", surfaceId: "" }),
+    ).toThrow(/surfaceId/);
   });
 });

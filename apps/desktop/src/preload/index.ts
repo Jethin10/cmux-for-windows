@@ -11,6 +11,10 @@ import {
   type NotificationListRequest,
   type NotificationMarkReadRequest,
   type NotificationNextUnreadRequest,
+  type PaneLayoutGetRequest,
+  type PaneSurfaceCloseRequest,
+  type PaneSurfaceFocusRequest,
+  type PaneSurfaceOpenRequest,
   type TerminalCloseRequest,
   type TerminalCreateRequest,
   type TerminalExitEvent,
@@ -25,6 +29,7 @@ import {
 import type {
   AgentSession,
   Notification,
+  PaneLayoutState,
   TerminalSession,
   TerminalSessionId,
   Workspace,
@@ -51,6 +56,12 @@ export interface CmuxBridge {
     list(request: NotificationListRequest): Promise<Notification[]>;
     markRead(request: NotificationMarkReadRequest): Promise<Notification>;
     nextUnread(request: NotificationNextUnreadRequest): Promise<AgentSession | undefined>;
+  };
+  paneLayout: {
+    get(request: PaneLayoutGetRequest): Promise<PaneLayoutState>;
+    openSurface(request: PaneSurfaceOpenRequest): Promise<PaneLayoutState>;
+    focusSurface(request: PaneSurfaceFocusRequest): Promise<PaneLayoutState>;
+    closeSurface(request: PaneSurfaceCloseRequest): Promise<PaneLayoutState>;
   };
   terminal: {
     create(request: TerminalCreateRequest): Promise<TerminalSession>;
@@ -102,6 +113,16 @@ const bridge: CmuxBridge = {
       ipcRenderer.invoke(ipcChannels.notificationNextUnread, request) as Promise<
         AgentSession | undefined
       >,
+  },
+  paneLayout: {
+    get: (request) =>
+      ipcRenderer.invoke(ipcChannels.paneLayoutGet, request) as Promise<PaneLayoutState>,
+    openSurface: (request) =>
+      ipcRenderer.invoke(ipcChannels.paneSurfaceOpen, request) as Promise<PaneLayoutState>,
+    focusSurface: (request) =>
+      ipcRenderer.invoke(ipcChannels.paneSurfaceFocus, request) as Promise<PaneLayoutState>,
+    closeSurface: (request) =>
+      ipcRenderer.invoke(ipcChannels.paneSurfaceClose, request) as Promise<PaneLayoutState>,
   },
   terminal: {
     create: (request) =>

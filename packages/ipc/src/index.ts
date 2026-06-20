@@ -3,6 +3,8 @@ import type {
   AgentSessionId,
   Notification,
   NotificationId,
+  PaneLayoutState,
+  PaneSurface,
   TerminalSession,
   TerminalSessionId,
   Workspace,
@@ -25,6 +27,10 @@ export const ipcChannels = {
   notificationList: `${IPC_NAMESPACE}:notification:list`,
   notificationMarkRead: `${IPC_NAMESPACE}:notification:mark-read`,
   notificationNextUnread: `${IPC_NAMESPACE}:notification:next-unread`,
+  paneLayoutGet: `${IPC_NAMESPACE}:pane-layout:get`,
+  paneSurfaceOpen: `${IPC_NAMESPACE}:pane-surface:open`,
+  paneSurfaceFocus: `${IPC_NAMESPACE}:pane-surface:focus`,
+  paneSurfaceClose: `${IPC_NAMESPACE}:pane-surface:close`,
   terminalCreate: `${IPC_NAMESPACE}:terminal:create`,
   terminalWrite: `${IPC_NAMESPACE}:terminal:write`,
   terminalResize: `${IPC_NAMESPACE}:terminal:resize`,
@@ -104,6 +110,25 @@ export interface NotificationNextUnreadRequest {
   workspaceId: WorkspaceId;
 }
 
+export interface PaneLayoutGetRequest {
+  workspaceId: WorkspaceId;
+}
+
+export interface PaneSurfaceOpenRequest {
+  workspaceId: WorkspaceId;
+  surface: PaneSurface;
+}
+
+export interface PaneSurfaceFocusRequest {
+  workspaceId: WorkspaceId;
+  surfaceId: string;
+}
+
+export interface PaneSurfaceCloseRequest {
+  workspaceId: WorkspaceId;
+  surfaceId: string;
+}
+
 export type TerminalCloseMode = "interrupt" | "terminate" | "kill-process-tree" | "detach";
 
 export interface TerminalCreateRequest {
@@ -168,6 +193,10 @@ export interface IpcContracts {
     request: NotificationNextUnreadRequest;
     response: AgentSession | undefined;
   };
+  [ipcChannels.paneLayoutGet]: { request: PaneLayoutGetRequest; response: PaneLayoutState };
+  [ipcChannels.paneSurfaceOpen]: { request: PaneSurfaceOpenRequest; response: PaneLayoutState };
+  [ipcChannels.paneSurfaceFocus]: { request: PaneSurfaceFocusRequest; response: PaneLayoutState };
+  [ipcChannels.paneSurfaceClose]: { request: PaneSurfaceCloseRequest; response: PaneLayoutState };
   [ipcChannels.terminalCreate]: { request: TerminalCreateRequest; response: TerminalSession };
   [ipcChannels.terminalWrite]: { request: TerminalWriteRequest; response: void };
   [ipcChannels.terminalResize]: { request: TerminalResizeRequest; response: void };
@@ -181,6 +210,7 @@ export interface IpcContracts {
 }
 
 const MAX_TERMINAL_WRITE_LENGTH = 1024 * 1024;
+const paneSurfaceKinds = new Set(["local-terminal", "agent-terminal", "transcript", "browser"]);
 const terminalCloseModes = new Set<TerminalCloseMode>([
   "interrupt",
   "terminate",
@@ -287,6 +317,39 @@ export function assertNotificationNextUnreadRequest(
   assertWorkspaceId(candidate.workspaceId, "notification.nextUnread workspaceId");
 }
 
+export function assertPaneLayoutGetRequest(value: unknown): asserts value is PaneLayoutGetRequest {
+  if (!isRecord(value)) throw new Error("paneLayout.get request must be an object");
+  const candidate = value as Partial<PaneLayoutGetRequest>;
+  assertWorkspaceId(candidate.workspaceId, "paneLayout.get workspaceId");
+}
+
+export function assertPaneSurfaceOpenRequest(
+  value: unknown,
+): asserts value is PaneSurfaceOpenRequest {
+  if (!isRecord(value)) throw new Error("paneSurface.open request must be an object");
+  const candidate = value as Partial<PaneSurfaceOpenRequest>;
+  assertWorkspaceId(candidate.workspaceId, "paneSurface.open workspaceId");
+  assertPaneSurface(candidate.surface, "paneSurface.open surface");
+}
+
+export function assertPaneSurfaceFocusRequest(
+  value: unknown,
+): asserts value is PaneSurfaceFocusRequest {
+  if (!isRecord(value)) throw new Error("paneSurface.focus request must be an object");
+  const candidate = value as Partial<PaneSurfaceFocusRequest>;
+  assertWorkspaceId(candidate.workspaceId, "paneSurface.focus workspaceId");
+  assertNonEmptyString(candidate.surfaceId, "paneSurface.focus surfaceId");
+}
+
+export function assertPaneSurfaceCloseRequest(
+  value: unknown,
+): asserts value is PaneSurfaceCloseRequest {
+  if (!isRecord(value)) throw new Error("paneSurface.close request must be an object");
+  const candidate = value as Partial<PaneSurfaceCloseRequest>;
+  assertWorkspaceId(candidate.workspaceId, "paneSurface.close workspaceId");
+  assertNonEmptyString(candidate.surfaceId, "paneSurface.close surfaceId");
+}
+
 export function assertTerminalCreateRequest(
   value: unknown,
 ): asserts value is TerminalCreateRequest {
@@ -345,6 +408,22 @@ export function assertTerminalSubscriptionRequest(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function assertPaneSurface(value: unknown, label: string): asserts value is PaneSurface {
+  if (!isRecord(value)) throw new Error(`${label} must be an object`);
+  const candidate = value as Partial<PaneSurface>;
+  assertNonEmptyString(candidate.id, `${label} id`);
+  assertNonEmptyString(candidate.title, `${label} title`);
+  if (typeof candidate.kind !== "string" || !paneSurfaceKinds.has(candidate.kind)) {
+    throw new Error(`${label} kind is invalid`);
+  }
+  if (candidate.agentSessionId !== undefined) {
+    assertAgentSessionId(candidate.agentSessionId, `${label} agentSessionId`);
+  }
+  if (candidate.terminalSessionId !== undefined) {
+    assertTerminalSessionId(candidate.terminalSessionId, `${label} terminalSessionId`);
+  }
 }
 
 function assertWorkspaceId(value: unknown, label: string): asserts value is WorkspaceId {

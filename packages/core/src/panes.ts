@@ -1,17 +1,6 @@
-export type PaneSurfaceKind = "local-terminal" | "agent-terminal" | "transcript" | "browser";
+import type { PaneLayoutState, PaneSurface } from "@cmux/shared";
 
-export interface PaneSurface {
-  id: string;
-  kind: PaneSurfaceKind;
-  title: string;
-  agentSessionId?: string;
-  terminalSessionId?: string;
-}
-
-export interface PaneLayoutState {
-  surfaces: readonly PaneSurface[];
-  activeSurfaceId?: string;
-}
+export type { PaneLayoutState, PaneSurface, PaneSurfaceKind } from "@cmux/shared";
 
 export function openSurface(layout: PaneLayoutState, surface: PaneSurface): PaneLayoutState {
   const existing = layout.surfaces.find((candidate) => candidate.id === surface.id);

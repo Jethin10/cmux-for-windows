@@ -35,11 +35,26 @@ describe("FileSupervisorStore", () => {
         },
       ],
       agents: [],
+      paneLayouts: [
+        {
+          workspaceId: "workspace-1" as WorkspaceId,
+          layout: {
+            surfaces: [{ id: "surface-1", kind: "transcript", title: "Logs" }],
+            activeSurfaceId: "surface-1",
+          },
+        },
+      ],
     });
 
     await expect(store.loadSnapshot()).resolves.toMatchObject({
       workspaces: [{ id: "workspace-1", rootPath: "C:/repo" }],
       agents: [],
+      paneLayouts: [
+        {
+          workspaceId: "workspace-1",
+          layout: { surfaces: [{ id: "surface-1", kind: "transcript" }] },
+        },
+      ],
     });
   });
 

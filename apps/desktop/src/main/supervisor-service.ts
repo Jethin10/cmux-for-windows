@@ -3,7 +3,10 @@ import { basename, resolve } from "node:path";
 import {
   defaultTemplates,
   detectAgentAttention,
+  closeSurface,
   findDefaultTemplate,
+  focusSurface,
+  openSurface,
   renderTemplate,
 } from "@cmux/core";
 import type {
@@ -11,6 +14,8 @@ import type {
   AgentSessionId,
   Notification as CmuxNotification,
   NotificationId,
+  PaneLayoutState,
+  PaneSurface,
   Template,
   TemplateId,
   TerminalSessionId,
@@ -66,6 +71,7 @@ export class SupervisorService {
   private readonly workspacesByRoot = new Map<string, WorkspaceId>();
   private readonly agents = new Map<AgentSessionId, AgentSession>();
   private readonly notifications = new Map<NotificationId, CmuxNotification>();
+  private readonly paneLayouts = new Map<WorkspaceId, PaneLayoutState>();
   private readonly runtimes = new Map<AgentSessionId, AgentRuntime>();
   private readonly templates: readonly Template[];
 
@@ -100,6 +106,7 @@ export class SupervisorService {
     this.workspacesByRoot.clear();
     this.agents.clear();
     this.notifications.clear();
+    this.paneLayouts.clear();
     for (const workspace of snapshot.workspaces) {
       this.workspaces.set(workspace.id, workspace);
       this.workspacesByRoot.set(normalizeRootPath(workspace.rootPath), workspace.id);
@@ -107,6 +114,11 @@ export class SupervisorService {
     for (const agent of snapshot.agents) this.agents.set(agent.id, agent);
     for (const notification of snapshot.notifications ?? []) {
       this.notifications.set(notification.id, notification);
+    }
+    for (const entry of snapshot.paneLayouts ?? []) {
+      if (this.workspaces.has(entry.workspaceId)) {
+        this.paneLayouts.set(entry.workspaceId, copyPaneLayout(entry.layout));
+      }
     }
   }
 
@@ -190,6 +202,35 @@ export class SupervisorService {
     const notification = this.listNotifications(workspaceId).find((candidate) => !candidate.read);
     if (!notification?.agentSessionId) return undefined;
     return this.agents.get(notification.agentSessionId);
+  }
+
+  getPaneLayout(workspaceId: WorkspaceId): PaneLayoutState {
+    this.requireWorkspace(workspaceId);
+    return copyPaneLayout(this.paneLayouts.get(workspaceId) ?? emptyPaneLayout());
+  }
+
+  openPaneSurface(workspaceId: WorkspaceId, surface: PaneSurface): PaneLayoutState {
+    this.requireWorkspace(workspaceId);
+    const layout = openSurface(this.paneLayouts.get(workspaceId) ?? emptyPaneLayout(), surface);
+    this.paneLayouts.set(workspaceId, layout);
+    void this.persistSnapshot();
+    return copyPaneLayout(layout);
+  }
+
+  focusPaneSurface(workspaceId: WorkspaceId, surfaceId: string): PaneLayoutState {
+    this.requireWorkspace(workspaceId);
+    const layout = focusSurface(this.paneLayouts.get(workspaceId) ?? emptyPaneLayout(), surfaceId);
+    this.paneLayouts.set(workspaceId, layout);
+    void this.persistSnapshot();
+    return copyPaneLayout(layout);
+  }
+
+  closePaneSurface(workspaceId: WorkspaceId, surfaceId: string): PaneLayoutState {
+    this.requireWorkspace(workspaceId);
+    const layout = closeSurface(this.paneLayouts.get(workspaceId) ?? emptyPaneLayout(), surfaceId);
+    this.paneLayouts.set(workspaceId, layout);
+    void this.persistSnapshot();
+    return copyPaneLayout(layout);
   }
 
   async launchAgent(request: AgentLaunchRequest): Promise<AgentSession> {
@@ -473,11 +514,26 @@ export class SupervisorService {
         workspaces: [...this.workspaces.values()],
         agents: [...this.agents.values()],
         notifications: [...this.notifications.values()],
+        paneLayouts: [...this.paneLayouts.entries()].map(([workspaceId, layout]) => ({
+          workspaceId,
+          layout: copyPaneLayout(layout),
+        })),
       });
     } catch (error) {
       console.error("Failed to persist supervisor snapshot", error);
     }
   }
+}
+
+function emptyPaneLayout(): PaneLayoutState {
+  return { surfaces: [] };
+}
+
+function copyPaneLayout(layout: PaneLayoutState): PaneLayoutState {
+  return {
+    surfaces: layout.surfaces.map((surface) => ({ ...surface })),
+    ...(layout.activeSurfaceId ? { activeSurfaceId: layout.activeSurfaceId } : {}),
+  };
 }
 
 function normalizeRootPath(rootPath: string): string {

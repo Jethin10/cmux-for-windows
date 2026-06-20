@@ -137,7 +137,7 @@ Implemented:
 - Git porcelain v2 status parsing and summary formatting foundation
 - Git status service, IPC/preload bridge, and dashboard refresh surface
 - browser URL safety helpers plus typed IPC/preload opening and dashboard browser pane rendering
-- native PTY smoke verification script and release hardening checklist
+- native PTY smoke verification script, electron-builder Windows installer config, and release hardening checklist
 
 Still required:
 
@@ -145,7 +145,7 @@ Still required:
 - richer batch launch presets and per-agent prompt editing
 - named-pipe transport and response streaming for CLI envelopes
 - richer approval execution hooks and Git/browser actions
-- packaged installer configuration and signed release pipeline
+- signed release pipeline and clean-machine installer validation
 
 Still required before Phase 1 can be considered passed:
 

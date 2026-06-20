@@ -23,13 +23,33 @@ This checklist tracks gates that must pass before CMux for Windows is treated as
    npx pnpm@10.13.1 verify:native-pty
    ```
 
-4. Run the manual PTY matrix in `docs/windows-pty-spike.md` on a clean Windows machine.
+4. Create an unpacked Windows package smoke build:
+
+   ```bash
+   npx pnpm@10.13.1 pack:win
+   ```
+
+5. Create a Windows NSIS installer candidate:
+
+   ```bash
+   npx pnpm@10.13.1 dist:win
+   ```
+
+6. Run the manual PTY matrix in `docs/windows-pty-spike.md` on a clean Windows machine.
 
 ## Browser surface safety gate
 
 - Only `http:` and `https:` URLs are allowed for browser surfaces.
 - Credentials are stripped from URLs before they become surface metadata.
 - Local file URLs must not be opened through browser surfaces.
+
+## Installer/signing gate
+
+- `apps/desktop/electron-builder.yml` defines the unsigned x64 NSIS installer target.
+- Packaging rebuilds `node-pty`; install the Windows SDK required by the native dependency before running `pack:win`/`dist:win`.
+- `signAndEditExecutable` is currently disabled; enable and provide a certificate only in release CI.
+- Keep `asarUnpack` coverage for `node-pty` so native bindings can load in packaged builds.
+- Treat `pack:win` as a fast smoke gate and `dist:win` as the installer gate.
 
 ## Release readiness reminders
 

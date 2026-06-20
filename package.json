@@ -12,6 +12,8 @@
     "lint": "eslint .",
     "format:check": "prettier --check .",
     "dev:desktop": "pnpm --filter @cmux/desktop dev",
+    "pack:win": "pnpm --filter @cmux/desktop pack:win",
+    "dist:win": "pnpm --filter @cmux/desktop dist:win",
     "verify:native-pty": "pnpm --filter @cmux/pty verify:native"
   },
   "devDependencies": {

@@ -104,6 +104,44 @@ describe("SupervisorService", () => {
     expect(terminalService.exitHandlers.has("terminal-1" as TerminalSessionId)).toBe(true);
   });
 
+  it("launches agent batches and reports per-item failures without stopping the batch", async () => {
+    const terminalService = new FakeTerminalService();
+    const service = new SupervisorService(terminalService);
+    const workspace = service.openWorkspace({ rootPath: "C:/repo", trusted: true });
+
+    const result = await service.launchAgentBatch({
+      workspaceId: workspace.id,
+      launches: [
+        { templateId: "template-pi", title: "Pi one", prompt: "fix tests" },
+        { templateId: "template-codex", title: "Codex one" },
+      ],
+    });
+
+    expect(result.failures).toEqual([]);
+    expect(result.agents.map((agent) => agent.title)).toEqual(["Pi one", "Codex one"]);
+    expect(terminalService.createRequests).toHaveLength(2);
+  });
+
+  it("continues agent batches after a bad launch item", async () => {
+    const terminalService = new FakeTerminalService();
+    const service = new SupervisorService(terminalService);
+    const workspace = service.openWorkspace({ rootPath: "C:/repo", trusted: true });
+
+    const result = await service.launchAgentBatch({
+      workspaceId: workspace.id,
+      launches: [
+        { templateId: "missing-template", title: "Missing" },
+        { templateId: "template-pi", title: "Pi one" },
+      ],
+    });
+
+    expect(result.failures).toEqual([
+      { index: 0, title: "Missing", error: "Unknown template: missing-template" },
+    ]);
+    expect(result.agents).toHaveLength(1);
+    expect(result.agents[0]).toMatchObject({ title: "Pi one", status: "running" });
+  });
+
   it("marks launch failures as failed instead of leaving starting sessions", async () => {
     const terminalService = new FakeTerminalService();
     terminalService.failCreate = true;

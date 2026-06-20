@@ -1,6 +1,7 @@
 import type { IpcMain } from "electron";
 import {
   assertAgentArchiveRequest,
+  assertAgentBatchLaunchRequest,
   assertAgentHistoryRequest,
   assertAgentLaunchRequest,
   assertAgentListRequest,
@@ -17,6 +18,7 @@ import {
   assertWorkspaceOpenRequest,
   ipcChannels,
   type AgentArchiveRequest,
+  type AgentBatchLaunchRequest,
   type AgentHistoryRequest,
   type AgentLaunchRequest,
   type AgentListRequest,
@@ -64,6 +66,11 @@ export function registerSupervisorIpc(
   ipcMain.handle(ipcChannels.agentLaunch, async (_event, payload: unknown) => {
     assertAgentLaunchRequest(payload);
     return (await getSupervisorService()).launchAgent(payload as AgentLaunchRequest);
+  });
+
+  ipcMain.handle(ipcChannels.agentBatchLaunch, async (_event, payload: unknown) => {
+    assertAgentBatchLaunchRequest(payload);
+    return (await getSupervisorService()).launchAgentBatch(payload as AgentBatchLaunchRequest);
   });
 
   ipcMain.handle(ipcChannels.agentStop, async (_event, payload: unknown) => {
@@ -142,6 +149,7 @@ export function registerSupervisorIpc(
     ipcMain.removeHandler(ipcChannels.agentList);
     ipcMain.removeHandler(ipcChannels.agentHistory);
     ipcMain.removeHandler(ipcChannels.agentLaunch);
+    ipcMain.removeHandler(ipcChannels.agentBatchLaunch);
     ipcMain.removeHandler(ipcChannels.agentStop);
     ipcMain.removeHandler(ipcChannels.agentRestart);
     ipcMain.removeHandler(ipcChannels.agentArchive);

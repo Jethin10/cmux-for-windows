@@ -20,6 +20,7 @@ export const ipcChannels = {
   agentList: `${IPC_NAMESPACE}:agent:list`,
   agentHistory: `${IPC_NAMESPACE}:agent:history`,
   agentLaunch: `${IPC_NAMESPACE}:agent:launch`,
+  agentBatchLaunch: `${IPC_NAMESPACE}:agent:batch-launch`,
   agentStop: `${IPC_NAMESPACE}:agent:stop`,
   agentRestart: `${IPC_NAMESPACE}:agent:restart`,
   agentArchive: `${IPC_NAMESPACE}:agent:archive`,
@@ -69,6 +70,28 @@ export interface AgentLaunchRequest {
   templateId: string;
   title: string;
   prompt?: string;
+}
+
+export interface AgentBatchLaunchItem {
+  templateId: string;
+  title: string;
+  prompt?: string;
+}
+
+export interface AgentBatchLaunchRequest {
+  workspaceId: WorkspaceId;
+  launches: readonly AgentBatchLaunchItem[];
+}
+
+export interface AgentBatchLaunchFailure {
+  index: number;
+  title?: string;
+  error: string;
+}
+
+export interface AgentBatchLaunchResponse {
+  agents: AgentSession[];
+  failures: AgentBatchLaunchFailure[];
 }
 
 export interface AgentStopRequest {
@@ -177,6 +200,10 @@ export interface IpcContracts {
   [ipcChannels.agentList]: { request: AgentListRequest; response: AgentSession[] };
   [ipcChannels.agentHistory]: { request: AgentHistoryRequest; response: AgentSession[] };
   [ipcChannels.agentLaunch]: { request: AgentLaunchRequest; response: AgentSession };
+  [ipcChannels.agentBatchLaunch]: {
+    request: AgentBatchLaunchRequest;
+    response: AgentBatchLaunchResponse;
+  };
   [ipcChannels.agentStop]: { request: AgentStopRequest; response: AgentSession };
   [ipcChannels.agentRestart]: { request: AgentRestartRequest; response: AgentSession };
   [ipcChannels.agentArchive]: { request: AgentArchiveRequest; response: AgentSession };
@@ -210,6 +237,7 @@ export interface IpcContracts {
 }
 
 const MAX_TERMINAL_WRITE_LENGTH = 1024 * 1024;
+const MAX_BATCH_LAUNCHES = 20;
 const paneSurfaceKinds = new Set(["local-terminal", "agent-terminal", "transcript", "browser"]);
 const terminalCloseModes = new Set<TerminalCloseMode>([
   "interrupt",
@@ -249,6 +277,30 @@ export function assertAgentLaunchRequest(value: unknown): asserts value is Agent
   if (candidate.prompt !== undefined && typeof candidate.prompt !== "string") {
     throw new Error("agent.launch prompt must be a string");
   }
+}
+
+export function assertAgentBatchLaunchRequest(
+  value: unknown,
+): asserts value is AgentBatchLaunchRequest {
+  if (!isRecord(value)) throw new Error("agent.batchLaunch request must be an object");
+  const candidate = value as Partial<AgentBatchLaunchRequest>;
+  assertWorkspaceId(candidate.workspaceId, "agent.batchLaunch workspaceId");
+  if (!Array.isArray(candidate.launches) || candidate.launches.length === 0) {
+    throw new Error("agent.batchLaunch launches must be a non-empty array");
+  }
+  if (candidate.launches.length > MAX_BATCH_LAUNCHES) {
+    throw new Error(`agent.batchLaunch launches cannot exceed ${MAX_BATCH_LAUNCHES}`);
+  }
+  candidate.launches.forEach((launch, index) => {
+    if (!isRecord(launch))
+      throw new Error(`agent.batchLaunch launches[${index}] must be an object`);
+    const item = launch as Partial<AgentBatchLaunchItem>;
+    assertNonEmptyString(item.templateId, `agent.batchLaunch launches[${index}] templateId`);
+    assertNonEmptyString(item.title, `agent.batchLaunch launches[${index}] title`);
+    if (item.prompt !== undefined && typeof item.prompt !== "string") {
+      throw new Error(`agent.batchLaunch launches[${index}] prompt must be a string`);
+    }
+  });
 }
 
 export function assertAgentStopRequest(value: unknown): asserts value is AgentStopRequest {

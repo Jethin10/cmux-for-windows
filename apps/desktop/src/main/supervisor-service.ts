@@ -24,6 +24,8 @@ import type {
 } from "@cmux/shared";
 import { nowIso } from "@cmux/shared";
 import type {
+  AgentBatchLaunchRequest,
+  AgentBatchLaunchResponse,
   AgentLaunchRequest,
   AgentStopRequest,
   TerminalCloseMode,
@@ -231,6 +233,33 @@ export class SupervisorService {
     this.paneLayouts.set(workspaceId, layout);
     void this.persistSnapshot();
     return copyPaneLayout(layout);
+  }
+
+  async launchAgentBatch(request: AgentBatchLaunchRequest): Promise<AgentBatchLaunchResponse> {
+    this.requireWorkspace(request.workspaceId);
+    const agents: AgentSession[] = [];
+    const failures: AgentBatchLaunchResponse["failures"] = [];
+
+    for (const [index, launch] of request.launches.entries()) {
+      try {
+        agents.push(
+          await this.launchAgent({
+            workspaceId: request.workspaceId,
+            templateId: launch.templateId,
+            title: launch.title,
+            ...(launch.prompt ? { prompt: launch.prompt } : {}),
+          }),
+        );
+      } catch (error) {
+        failures.push({
+          index,
+          title: launch.title,
+          error: formatError(error),
+        });
+      }
+    }
+
+    return { agents, failures };
   }
 
   async launchAgent(request: AgentLaunchRequest): Promise<AgentSession> {

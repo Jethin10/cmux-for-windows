@@ -2,6 +2,8 @@ import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 import {
   ipcChannels,
   type AgentArchiveRequest,
+  type AgentBatchLaunchRequest,
+  type AgentBatchLaunchResponse,
   type AgentHistoryRequest,
   type AgentLaunchRequest,
   type AgentListRequest,
@@ -45,6 +47,7 @@ export interface CmuxBridge {
     list(request: AgentListRequest): Promise<AgentSession[]>;
     history(request: AgentHistoryRequest): Promise<AgentSession[]>;
     launch(request: AgentLaunchRequest): Promise<AgentSession>;
+    batchLaunch(request: AgentBatchLaunchRequest): Promise<AgentBatchLaunchResponse>;
     stop(request: AgentStopRequest): Promise<AgentSession>;
     restart(request: AgentRestartRequest): Promise<AgentSession>;
     archive(request: AgentArchiveRequest): Promise<AgentSession>;
@@ -92,6 +95,11 @@ const bridge: CmuxBridge = {
       ipcRenderer.invoke(ipcChannels.agentHistory, request) as Promise<AgentSession[]>,
     launch: (request) =>
       ipcRenderer.invoke(ipcChannels.agentLaunch, request) as Promise<AgentSession>,
+    batchLaunch: (request) =>
+      ipcRenderer.invoke(
+        ipcChannels.agentBatchLaunch,
+        request,
+      ) as Promise<AgentBatchLaunchResponse>,
     stop: (request) => ipcRenderer.invoke(ipcChannels.agentStop, request) as Promise<AgentSession>,
     restart: (request) =>
       ipcRenderer.invoke(ipcChannels.agentRestart, request) as Promise<AgentSession>,

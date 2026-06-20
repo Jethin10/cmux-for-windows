@@ -130,6 +130,10 @@ export class SupervisorService {
     return [...this.workspaces.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   }
 
+  getWorkspace(workspaceId: WorkspaceId): Workspace {
+    return this.requireWorkspace(workspaceId);
+  }
+
   openWorkspace(request: WorkspaceOpenRequest): Workspace {
     const rootPath = normalizeRootPath(request.rootPath);
     const existingId = this.workspacesByRoot.get(rootPath);

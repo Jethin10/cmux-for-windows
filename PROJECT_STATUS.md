@@ -134,6 +134,7 @@ Implemented:
 - file-backed CLI command inbox bridge for desktop command execution
 - approval request model/risk inference foundation
 - Git porcelain v2 status parsing and summary formatting foundation
+- Git status service, IPC/preload bridge, and dashboard refresh surface
 - browser URL safety helpers for future browser surfaces
 - native PTY smoke verification script and release hardening checklist
 
@@ -142,7 +143,7 @@ Still required:
 - pane split/move model beyond the current ordered surface list
 - richer batch launch presets and per-agent prompt editing
 - named-pipe transport and response streaming for CLI envelopes
-- UI and IPC surfaces for Git workflow/approval/browser features
+- UI and IPC surfaces for approval/browser features and richer Git actions
 - packaged installer configuration and signed release pipeline
 
 Still required before Phase 1 can be considered passed:

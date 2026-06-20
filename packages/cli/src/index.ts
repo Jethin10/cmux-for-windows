@@ -1,33 +1,34 @@
 #!/usr/bin/env node
 
+import { randomUUID } from "node:crypto";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import type {
   AgentLaunchRequest,
   AgentListRequest,
   AgentStopRequest,
-  WorkspaceOpenRequest,
+  CliCommandEnvelope,
 } from "@cmux/ipc";
 
-export type CliEnvelope =
-  | { command: "workspace.open"; payload: WorkspaceOpenRequest }
-  | { command: "agent.list"; payload: AgentListRequest }
-  | { command: "agent.launch"; payload: AgentLaunchRequest }
-  | { command: "agent.stop"; payload: AgentStopRequest };
+export type CliEnvelope = CliCommandEnvelope;
 
 export interface CliResult {
   exitCode: number;
   stdout?: string;
   stderr?: string;
+  envelope?: CliEnvelope;
 }
 
 export function run(argv = process.argv.slice(2)): CliResult {
   if (argv.length === 0 || argv.includes("--help")) return ok(helpText());
-  const [command, ...rest] = argv;
 
   try {
-    if (command === "workspace") return workspaceCommand(rest);
-    if (command === "agent") return agentCommand(rest);
-    if (command === "version" || command === "--version") return ok("cmux 0.1.0\n");
-    return fail(`Unknown command: ${command}\n\n${helpText()}`);
+    const { argv: commandArgv, inboxDir } = extractBridgeOptions(argv);
+    const [command, ...rest] = commandArgv;
+    if (!command) return ok(helpText());
+
+    const result = commandResult(command, rest);
+    return inboxDir && result.envelope ? writeEnvelopeToInbox(inboxDir, result.envelope) : result;
   } catch (error) {
     return fail(error instanceof Error ? `${error.message}\n` : `${String(error)}\n`);
   }
@@ -40,10 +41,18 @@ export function main(argv = process.argv.slice(2)): number {
   return result.exitCode;
 }
 
+function commandResult(command: string, rest: string[]): CliResult {
+  if (command === "workspace") return workspaceCommand(rest);
+  if (command === "agent") return agentCommand(rest);
+  if (command === "version" || command === "--version") return ok("cmux 0.1.0\n");
+  return fail(`Unknown command: ${command}\n\n${helpText()}`);
+}
+
 function workspaceCommand(argv: string[]): CliResult {
   const [subcommand, ...rest] = argv;
-  if (subcommand !== "open")
+  if (subcommand !== "open") {
     return fail("Usage: cmux workspace open --path <path> [--untrusted]\n");
+  }
   const flags = parseFlags(rest);
   const rootPath = requireFlag(flags, "path");
   return envelope({
@@ -118,7 +127,27 @@ function requireFlag(flags: Record<string, string>, key: string): string {
 }
 
 function envelope(value: CliEnvelope): CliResult {
-  return ok(`${JSON.stringify(value, null, 2)}\n`);
+  return { ...ok(`${JSON.stringify(value, null, 2)}\n`), envelope: value };
+}
+
+function extractBridgeOptions(argv: string[]): { argv: string[]; inboxDir?: string } {
+  const inboxIndex = argv.indexOf("--inbox");
+  if (inboxIndex >= 0) {
+    const inboxDir = argv[inboxIndex + 1];
+    if (!inboxDir || inboxDir.startsWith("--")) throw new Error("Missing required --inbox path");
+    return { argv: [...argv.slice(0, inboxIndex), ...argv.slice(inboxIndex + 2)], inboxDir };
+  }
+  return process.env.CMUX_COMMAND_INBOX
+    ? { argv, inboxDir: process.env.CMUX_COMMAND_INBOX }
+    : { argv };
+}
+
+function writeEnvelopeToInbox(inboxDir: string, value: CliEnvelope): CliResult {
+  mkdirSync(inboxDir, { recursive: true });
+  const id = randomUUID();
+  const path = join(inboxDir, `${Date.now()}-${id}.json`);
+  writeFileSync(path, `${JSON.stringify({ id, envelope: value }, null, 2)}\n`, "utf8");
+  return ok(`Queued command ${id}\n${path}\n`);
 }
 
 function ok(stdout: string): CliResult {
@@ -130,7 +159,7 @@ function fail(stderr: string): CliResult {
 }
 
 function helpText(): string {
-  return `cmux CLI\n\nCommands:\n  cmux workspace open --path <path> [--untrusted]\n  cmux agent list --workspace <workspace-id>\n  cmux agent launch --workspace <workspace-id> --template <template-id> --title <title> [--prompt <prompt>]\n  cmux agent stop --agent <agent-session-id> [--mode interrupt|terminate|kill-process-tree]\n\nThe CLI currently emits typed command envelopes for the desktop/API bridge.\n`;
+  return `cmux CLI\n\nCommands:\n  cmux workspace open --path <path> [--untrusted]\n  cmux agent list --workspace <workspace-id>\n  cmux agent launch --workspace <workspace-id> --template <template-id> --title <title> [--prompt <prompt>]\n  cmux agent stop --agent <agent-session-id> [--mode interrupt|terminate|kill-process-tree]\n\nBy default the CLI emits typed command envelopes. Pass --inbox <dir> or set CMUX_COMMAND_INBOX to queue envelopes for the desktop file bridge.\n`;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

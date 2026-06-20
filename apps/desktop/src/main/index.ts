@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ipcChannels, type AppInfoResponse } from "@cmux/ipc";
+import { startCliCommandFileBridge } from "./cli-command-bridge.js";
 import { ElectronDesktopNotificationService } from "./desktop-notification-service.js";
 import { FileSupervisorStore } from "./persistent-store.js";
 import { registerSupervisorIpc } from "./supervisor-ipc.js";
@@ -13,6 +14,7 @@ const currentDir = dirname(fileURLToPath(import.meta.url));
 let terminalServicePromise: Promise<TerminalService> | undefined;
 let terminalService: TerminalService | undefined;
 let supervisorServicePromise: Promise<SupervisorService> | undefined;
+let stopCliBridge: (() => void) | undefined;
 
 function getTerminalService(): Promise<TerminalService> {
   terminalServicePromise ??= TerminalService.create().then((service) => {
@@ -64,6 +66,10 @@ registerTerminalIpc(ipcMain, getTerminalService);
 registerSupervisorIpc(ipcMain, getSupervisorService);
 
 void app.whenReady().then(() => {
+  stopCliBridge = startCliCommandFileBridge(
+    join(app.getPath("userData"), "cli-inbox"),
+    getSupervisorService,
+  );
   createWindow();
 
   app.on("activate", () => {
@@ -72,6 +78,7 @@ void app.whenReady().then(() => {
 });
 
 app.on("before-quit", () => {
+  stopCliBridge?.();
   void terminalService?.closeAll("terminate");
 });
 

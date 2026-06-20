@@ -18,9 +18,28 @@ export interface PaneSurface {
   url?: string;
 }
 
+export type PaneSplitDirection = "horizontal" | "vertical";
+
+export interface PaneLeafNode {
+  id: string;
+  type: "leaf";
+  surfaceIds: readonly string[];
+  activeSurfaceId?: string;
+}
+
+export interface PaneSplitNode {
+  id: string;
+  type: "split";
+  direction: PaneSplitDirection;
+  children: readonly PaneNode[];
+}
+
+export type PaneNode = PaneLeafNode | PaneSplitNode;
+
 export interface PaneLayoutState {
   surfaces: readonly PaneSurface[];
   activeSurfaceId?: string;
+  rootPane?: PaneNode;
 }
 
 export type AgentProvider =

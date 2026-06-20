@@ -4,6 +4,7 @@ import {
   focusSurface,
   openSurface,
   reorderSurface,
+  splitSurface,
   type PaneLayoutState,
 } from "./panes.js";
 
@@ -20,6 +21,12 @@ describe("pane layout state", () => {
     expect(layout).toEqual({
       surfaces: [{ id: "local", kind: "local-terminal", title: "Local shell" }],
       activeSurfaceId: "local",
+      rootPane: {
+        id: "pane:root",
+        type: "leaf",
+        surfaceIds: ["local"],
+        activeSurfaceId: "local",
+      },
     });
   });
 
@@ -84,6 +91,34 @@ describe("pane layout state", () => {
         { id: "two", kind: "agent-terminal", title: "Two" },
         { id: "one", kind: "local-terminal", title: "One" },
       ],
+    });
+  });
+
+  it("splits the pane containing a surface", () => {
+    const layout = openSurface(emptyLayout, {
+      id: "local",
+      kind: "local-terminal",
+      title: "Local shell",
+    });
+
+    expect(
+      splitSurface(layout, "local", {
+        direction: "horizontal",
+        splitPaneId: "split:1",
+        newPaneId: "pane:2",
+        newSurface: { id: "browser", kind: "browser", title: "Docs", url: "https://example.com/" },
+      }),
+    ).toMatchObject({
+      activeSurfaceId: "browser",
+      rootPane: {
+        id: "split:1",
+        type: "split",
+        direction: "horizontal",
+        children: [
+          { id: "pane:root", type: "leaf", surfaceIds: ["local"] },
+          { id: "pane:2", type: "leaf", surfaceIds: ["browser"] },
+        ],
+      },
     });
   });
 

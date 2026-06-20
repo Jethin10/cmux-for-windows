@@ -226,6 +226,14 @@ describe("SupervisorService", () => {
     expect(service.focusPaneSurface(workspace.id, "surface-agent-1")).toMatchObject({
       activeSurfaceId: "surface-agent-1",
     });
+    const afterReorder = service.reorderPaneSurface(workspace.id, "surface-log-1", {
+      beforeSurfaceId: "surface-agent-1",
+    });
+    expect(afterReorder.surfaces.map((surface) => surface.id)).toEqual([
+      "surface-log-1",
+      "surface-agent-1",
+    ]);
+
     const afterClose = service.closePaneSurface(workspace.id, "surface-agent-1");
     expect(afterClose).toMatchObject({ activeSurfaceId: "surface-log-1" });
     await new Promise<void>((resolve) => setImmediate(resolve));

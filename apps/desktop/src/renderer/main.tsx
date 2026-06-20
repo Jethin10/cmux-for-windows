@@ -2,7 +2,13 @@ import { StrictMode, useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { defaultTemplates } from "@cmux/core";
 import type { TranscriptSearchResult } from "@cmux/ipc";
-import type { AgentSession, Notification, Workspace } from "@cmux/shared";
+import type {
+  AgentSession,
+  Notification,
+  PaneLayoutState,
+  PaneSurface,
+  Workspace,
+} from "@cmux/shared";
 import { formatSessionBadge } from "@cmux/ui";
 import { TerminalSpike } from "./TerminalSpike.js";
 import { TerminalSurface } from "./TerminalSurface.js";
@@ -18,6 +24,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchResults, setSearchResults] = useState<TranscriptSearchResult[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [paneLayout, setPaneLayout] = useState<PaneLayoutState>({ surfaces: [] });
   const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>();
   const [templateId, setTemplateId] = useState<string>(String(defaultTemplates[0]?.id ?? ""));
   const [agentTitle, setAgentTitle] = useState<string>("Pi in repo");
@@ -34,6 +41,14 @@ function App() {
     () => agents.find((agent) => agent.id === selectedAgentId),
     [agents, selectedAgentId],
   );
+  const activeSurface = useMemo(
+    () => paneLayout.surfaces.find((surface) => surface.id === paneLayout.activeSurfaceId),
+    [paneLayout],
+  );
+  const activeSurfaceAgent = useMemo(
+    () => agents.find((agent) => agent.id === activeSurface?.agentSessionId),
+    [activeSurface, agents],
+  );
 
   useEffect(() => {
     void window.cmux.appInfo().then((info) => {
@@ -45,6 +60,7 @@ function App() {
   useEffect(() => {
     if (!activeWorkspaceId) {
       setAgents([]);
+      setPaneLayout({ surfaces: [] });
       return;
     }
     void refreshAgents(activeWorkspaceId);
@@ -65,6 +81,7 @@ function App() {
     setAgents(nextAgents);
     setHistory(nextHistory);
     setNotifications(await window.cmux.notification.list({ workspaceId: workspaceIdValue }));
+    setPaneLayout(await window.cmux.paneLayout.get({ workspaceId: workspaceIdValue }));
     setSelectedAgentId((current) => {
       if (current && nextAgents.some((agent) => agent.id === current)) return current;
       return nextAgents.find((agent) => agent.terminalSessionId)?.id;
@@ -255,8 +272,27 @@ function App() {
               </div>
               <div className="session-actions">
                 <button
-                  disabled={!agent.terminalSessionId}
-                  onClick={() => setSelectedAgentId(agent.id)}
+                  disabled={!agent.terminalSessionId || !activeWorkspace}
+                  onClick={() => {
+                    const terminalSessionId = agent.terminalSessionId;
+                    if (!activeWorkspace || !terminalSessionId) return;
+                    void runAction(async () => {
+                      const surface: PaneSurface = {
+                        id: `agent-terminal:${agent.id}`,
+                        kind: "agent-terminal",
+                        title: agent.title,
+                        agentSessionId: agent.id,
+                        terminalSessionId,
+                      };
+                      setPaneLayout(
+                        await window.cmux.paneLayout.openSurface({
+                          workspaceId: activeWorkspace.id,
+                          surface,
+                        }),
+                      );
+                      setSelectedAgentId(agent.id);
+                    });
+                  }}
                 >
                   Attach
                 </button>
@@ -417,9 +453,96 @@ function App() {
         </div>
         <div className="pane-surface">
           <div className="pane-title">
-            {selectedAgent ? `Agent session: ${selectedAgent.title}` : "Agent session surface"}
+            {activeSurfaceAgent
+              ? `Agent session: ${activeSurfaceAgent.title}`
+              : selectedAgent
+                ? `Agent session: ${selectedAgent.title}`
+                : "Agent session surface"}
           </div>
-          {selectedAgent?.terminalSessionId ? (
+          {activeWorkspace && paneLayout.surfaces.length > 0 ? (
+            <div className="surface-tabs">
+              {paneLayout.surfaces.map((surface, index) => (
+                <div
+                  key={surface.id}
+                  className={
+                    surface.id === paneLayout.activeSurfaceId ? "surface-tab active" : "surface-tab"
+                  }
+                >
+                  <button
+                    onClick={() =>
+                      void runAction(async () => {
+                        setPaneLayout(
+                          await window.cmux.paneLayout.focusSurface({
+                            workspaceId: activeWorkspace.id,
+                            surfaceId: surface.id,
+                          }),
+                        );
+                        if (surface.agentSessionId) setSelectedAgentId(surface.agentSessionId);
+                      })
+                    }
+                  >
+                    {surface.title}
+                  </button>
+                  <button
+                    disabled={index === 0}
+                    aria-label={`Move ${surface.title} left`}
+                    onClick={() =>
+                      void runAction(async () => {
+                        setPaneLayout(
+                          await window.cmux.paneLayout.reorderSurface({
+                            workspaceId: activeWorkspace.id,
+                            surfaceId: surface.id,
+                            beforeSurfaceId: paneLayout.surfaces[index - 1]!.id,
+                          }),
+                        );
+                      })
+                    }
+                  >
+                    ←
+                  </button>
+                  <button
+                    disabled={index === paneLayout.surfaces.length - 1}
+                    aria-label={`Move ${surface.title} right`}
+                    onClick={() =>
+                      void runAction(async () => {
+                        setPaneLayout(
+                          await window.cmux.paneLayout.reorderSurface({
+                            workspaceId: activeWorkspace.id,
+                            surfaceId: surface.id,
+                            afterSurfaceId: paneLayout.surfaces[index + 1]!.id,
+                          }),
+                        );
+                      })
+                    }
+                  >
+                    →
+                  </button>
+                  <button
+                    aria-label={`Close ${surface.title}`}
+                    onClick={() =>
+                      void runAction(async () => {
+                        setPaneLayout(
+                          await window.cmux.paneLayout.closeSurface({
+                            workspaceId: activeWorkspace.id,
+                            surfaceId: surface.id,
+                          }),
+                        );
+                      })
+                    }
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {activeSurfaceAgent?.terminalSessionId ? (
+            <TerminalSurface
+              key={activeSurfaceAgent.terminalSessionId}
+              terminalSessionId={activeSurfaceAgent.terminalSessionId}
+              title={activeSurfaceAgent.title}
+            />
+          ) : selectedAgent?.terminalSessionId ? (
             <TerminalSurface
               key={selectedAgent.terminalSessionId}
               terminalSessionId={selectedAgent.terminalSessionId}
@@ -427,7 +550,7 @@ function App() {
             />
           ) : (
             <div className="empty-surface">
-              Select a running session and click Attach to open a live terminal pane.
+              Select a running session and click Attach to open a persisted terminal surface.
             </div>
           )}
         </div>

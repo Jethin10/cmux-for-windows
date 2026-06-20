@@ -14,6 +14,7 @@ import {
   assertPaneSurfaceCloseRequest,
   assertPaneSurfaceFocusRequest,
   assertPaneSurfaceOpenRequest,
+  assertPaneSurfaceReorderRequest,
   assertTranscriptSearchRequest,
   assertWorkspaceOpenRequest,
   ipcChannels,
@@ -31,6 +32,7 @@ import {
   type PaneSurfaceCloseRequest,
   type PaneSurfaceFocusRequest,
   type PaneSurfaceOpenRequest,
+  type PaneSurfaceReorderRequest,
   type TranscriptSearchRequest,
   type WorkspaceOpenRequest,
 } from "@cmux/ipc";
@@ -143,6 +145,20 @@ export function registerSupervisorIpc(
     return (await getSupervisorService()).closePaneSurface(request.workspaceId, request.surfaceId);
   });
 
+  ipcMain.handle(ipcChannels.paneSurfaceReorder, async (_event, payload: unknown) => {
+    assertPaneSurfaceReorderRequest(payload);
+    const request = payload as PaneSurfaceReorderRequest;
+    return (await getSupervisorService()).reorderPaneSurface(
+      request.workspaceId,
+      request.surfaceId,
+      {
+        ...(request.beforeSurfaceId ? { beforeSurfaceId: request.beforeSurfaceId } : {}),
+        ...(request.afterSurfaceId ? { afterSurfaceId: request.afterSurfaceId } : {}),
+        ...(request.focus !== undefined ? { focus: request.focus } : {}),
+      },
+    );
+  });
+
   return () => {
     ipcMain.removeHandler(ipcChannels.workspaceList);
     ipcMain.removeHandler(ipcChannels.workspaceOpen);
@@ -161,5 +177,6 @@ export function registerSupervisorIpc(
     ipcMain.removeHandler(ipcChannels.paneSurfaceOpen);
     ipcMain.removeHandler(ipcChannels.paneSurfaceFocus);
     ipcMain.removeHandler(ipcChannels.paneSurfaceClose);
+    ipcMain.removeHandler(ipcChannels.paneSurfaceReorder);
   };
 }

@@ -125,6 +125,7 @@ Implemented:
 
 - core pane layout model/helpers with tests
 - persisted backend-owned pane layout state with typed IPC/preload methods
+- focus-neutral pane surface reordering/closing controls in the dashboard
 - attachable live xterm.js agent terminal surface
 - two-pane dashboard area with local shell spike and selected agent session pane
 - Vite manual chunks for React and xterm renderer bundle splitting
@@ -137,7 +138,7 @@ Implemented:
 
 Still required:
 
-- richer UI controls for moving/reordering/splitting persisted pane surfaces
+- pane split/move model beyond the current ordered surface list
 - richer batch launch presets and per-agent prompt editing
 - desktop bridge or named-pipe transport for executing CLI envelopes
 - UI and IPC surfaces for Git workflow/approval/browser features

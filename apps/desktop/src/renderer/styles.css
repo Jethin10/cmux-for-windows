@@ -91,6 +91,39 @@ code {
   font-weight: 700;
 }
 
+.surface-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 8px 8px;
+}
+
+.surface-tab {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) repeat(3, 32px);
+  max-width: 360px;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.surface-tab.active {
+  border-color: #60a5fa;
+}
+
+.surface-tab button {
+  border: 0;
+  border-radius: 0;
+  background: #0f172a;
+  padding: 6px 8px;
+}
+
+.surface-tab button:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .empty-surface {
   display: grid;
   place-items: center;

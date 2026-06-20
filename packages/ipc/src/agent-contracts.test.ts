@@ -14,6 +14,7 @@ import {
   assertPaneSurfaceCloseRequest,
   assertPaneSurfaceFocusRequest,
   assertPaneSurfaceOpenRequest,
+  assertPaneSurfaceReorderRequest,
   assertTranscriptSearchRequest,
   assertWorkspaceOpenRequest,
 } from "./index.js";
@@ -72,6 +73,14 @@ describe("workspace and agent IPC request validation", () => {
     expect(() =>
       assertPaneSurfaceCloseRequest({ workspaceId: "workspace-1", surfaceId: "surface-1" }),
     ).not.toThrow();
+    expect(() =>
+      assertPaneSurfaceReorderRequest({
+        workspaceId: "workspace-1",
+        surfaceId: "surface-1",
+        afterSurfaceId: "surface-2",
+        focus: true,
+      }),
+    ).not.toThrow();
   });
 
   it("rejects malformed agent payloads", () => {
@@ -107,5 +116,13 @@ describe("workspace and agent IPC request validation", () => {
     expect(() =>
       assertPaneSurfaceFocusRequest({ workspaceId: "workspace-1", surfaceId: "" }),
     ).toThrow(/surfaceId/);
+    expect(() =>
+      assertPaneSurfaceReorderRequest({
+        workspaceId: "workspace-1",
+        surfaceId: "surface-1",
+        beforeSurfaceId: "surface-2",
+        afterSurfaceId: "surface-3",
+      }),
+    ).toThrow(/both/);
   });
 });

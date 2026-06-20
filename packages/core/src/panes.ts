@@ -17,9 +17,50 @@ export function closeSurface(layout: PaneLayoutState, surfaceId: string): PaneLa
   return activeSurfaceId ? { surfaces, activeSurfaceId } : { surfaces };
 }
 
+export interface ReorderSurfaceOptions {
+  beforeSurfaceId?: string;
+  afterSurfaceId?: string;
+  focus?: boolean;
+}
+
 export function focusSurface(layout: PaneLayoutState, surfaceId: string): PaneLayoutState {
   if (!layout.surfaces.some((surface) => surface.id === surfaceId)) {
     throw new Error(`Unknown pane surface: ${surfaceId}`);
   }
   return { ...layout, activeSurfaceId: surfaceId };
+}
+
+export function reorderSurface(
+  layout: PaneLayoutState,
+  surfaceId: string,
+  options: ReorderSurfaceOptions,
+): PaneLayoutState {
+  if (options.beforeSurfaceId && options.afterSurfaceId) {
+    throw new Error("Specify either beforeSurfaceId or afterSurfaceId, not both");
+  }
+
+  const surface = layout.surfaces.find((candidate) => candidate.id === surfaceId);
+  if (!surface) throw new Error(`Unknown pane surface: ${surfaceId}`);
+
+  const remaining = layout.surfaces.filter((candidate) => candidate.id !== surfaceId);
+  let insertIndex = remaining.length;
+
+  if (options.beforeSurfaceId) {
+    insertIndex = remaining.findIndex((candidate) => candidate.id === options.beforeSurfaceId);
+    if (insertIndex < 0) throw new Error(`Unknown pane surface: ${options.beforeSurfaceId}`);
+  } else if (options.afterSurfaceId) {
+    const afterIndex = remaining.findIndex((candidate) => candidate.id === options.afterSurfaceId);
+    if (afterIndex < 0) throw new Error(`Unknown pane surface: ${options.afterSurfaceId}`);
+    insertIndex = afterIndex + 1;
+  }
+
+  const surfaces = [...remaining.slice(0, insertIndex), surface, ...remaining.slice(insertIndex)];
+  return {
+    surfaces,
+    ...(options.focus
+      ? { activeSurfaceId: surfaceId }
+      : layout.activeSurfaceId
+        ? { activeSurfaceId: layout.activeSurfaceId }
+        : {}),
+  };
 }

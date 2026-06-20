@@ -7,6 +7,8 @@ import {
   findDefaultTemplate,
   focusSurface,
   openSurface,
+  reorderSurface,
+  type ReorderSurfaceOptions,
   renderTemplate,
 } from "@cmux/core";
 import type {
@@ -230,6 +232,22 @@ export class SupervisorService {
   closePaneSurface(workspaceId: WorkspaceId, surfaceId: string): PaneLayoutState {
     this.requireWorkspace(workspaceId);
     const layout = closeSurface(this.paneLayouts.get(workspaceId) ?? emptyPaneLayout(), surfaceId);
+    this.paneLayouts.set(workspaceId, layout);
+    void this.persistSnapshot();
+    return copyPaneLayout(layout);
+  }
+
+  reorderPaneSurface(
+    workspaceId: WorkspaceId,
+    surfaceId: string,
+    options: ReorderSurfaceOptions,
+  ): PaneLayoutState {
+    this.requireWorkspace(workspaceId);
+    const layout = reorderSurface(
+      this.paneLayouts.get(workspaceId) ?? emptyPaneLayout(),
+      surfaceId,
+      options,
+    );
     this.paneLayouts.set(workspaceId, layout);
     void this.persistSnapshot();
     return copyPaneLayout(layout);

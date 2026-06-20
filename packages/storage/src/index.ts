@@ -84,6 +84,70 @@ export const initialMigrations: readonly Migration[] = [
       );
     `,
   },
+  {
+    id: 2,
+    name: "supervisor-persistence-schema",
+    sql: `
+      CREATE TABLE IF NOT EXISTS notifications (
+        id TEXT PRIMARY KEY,
+        workspace_id TEXT NOT NULL,
+        agent_session_id TEXT,
+        terminal_session_id TEXT,
+        severity TEXT NOT NULL,
+        title TEXT NOT NULL,
+        body TEXT NOT NULL,
+        read INTEGER NOT NULL DEFAULT 0,
+        source TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY(workspace_id) REFERENCES workspaces(id),
+        FOREIGN KEY(agent_session_id) REFERENCES agent_sessions(id)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_notifications_workspace_read_created
+        ON notifications(workspace_id, read, created_at);
+
+      CREATE TABLE IF NOT EXISTS approval_requests (
+        id TEXT PRIMARY KEY,
+        workspace_id TEXT NOT NULL,
+        agent_session_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        body TEXT NOT NULL,
+        risk TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        resolved_at TEXT,
+        resolved_by TEXT,
+        FOREIGN KEY(workspace_id) REFERENCES workspaces(id),
+        FOREIGN KEY(agent_session_id) REFERENCES agent_sessions(id)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_approval_requests_workspace_status_created
+        ON approval_requests(workspace_id, status, created_at);
+
+      CREATE TABLE IF NOT EXISTS pane_layouts (
+        workspace_id TEXT PRIMARY KEY,
+        layout_json TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY(workspace_id) REFERENCES workspaces(id)
+      );
+
+      CREATE TABLE IF NOT EXISTS transcript_records (
+        terminal_session_id TEXT NOT NULL,
+        sequence INTEGER NOT NULL,
+        workspace_id TEXT NOT NULL,
+        agent_session_id TEXT,
+        created_at TEXT NOT NULL,
+        data TEXT NOT NULL,
+        byte_length INTEGER NOT NULL,
+        PRIMARY KEY(terminal_session_id, sequence),
+        FOREIGN KEY(workspace_id) REFERENCES workspaces(id),
+        FOREIGN KEY(agent_session_id) REFERENCES agent_sessions(id)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_transcript_records_workspace_created
+        ON transcript_records(workspace_id, created_at);
+    `,
+  },
 ];
 
 interface AppliedMigrationRow {

@@ -132,7 +132,7 @@ Implemented:
 - typed CLI command envelopes for workspace open, agent list/launch/stop
 - multi-agent batch launch IPC/service flow and dashboard control
 - file-backed CLI command inbox bridge for desktop command execution
-- approval request model/risk inference foundation
+- approval request model/risk inference foundation plus in-memory approval request IPC/UI flow
 - Git porcelain v2 status parsing and summary formatting foundation
 - Git status service, IPC/preload bridge, and dashboard refresh surface
 - browser URL safety helpers plus typed IPC/preload opening and dashboard browser pane rendering
@@ -143,7 +143,7 @@ Still required:
 - pane split/move model beyond the current ordered surface list
 - richer batch launch presets and per-agent prompt editing
 - named-pipe transport and response streaming for CLI envelopes
-- UI and IPC surfaces for approval features and richer Git/browser actions
+- persistent approval records and richer Git/browser actions
 - packaged installer configuration and signed release pipeline
 
 Still required before Phase 1 can be considered passed:

@@ -10,6 +10,9 @@ import {
   type AgentRestartRequest,
   type AgentStopRequest,
   type AppInfoResponse,
+  type ApprovalListRequest,
+  type ApprovalRequestRecord,
+  type ApprovalResolveRequest,
   type BrowserSurfaceOpenRequest,
   type GitStatusRequest,
   type GitStatusResponse,
@@ -63,6 +66,10 @@ export interface CmuxBridge {
     list(request: NotificationListRequest): Promise<Notification[]>;
     markRead(request: NotificationMarkReadRequest): Promise<Notification>;
     nextUnread(request: NotificationNextUnreadRequest): Promise<AgentSession | undefined>;
+  };
+  approval: {
+    list(request: ApprovalListRequest): Promise<ApprovalRequestRecord[]>;
+    resolve(request: ApprovalResolveRequest): Promise<ApprovalRequestRecord>;
   };
   git: {
     status(request: GitStatusRequest): Promise<GitStatusResponse>;
@@ -132,6 +139,12 @@ const bridge: CmuxBridge = {
       ipcRenderer.invoke(ipcChannels.notificationNextUnread, request) as Promise<
         AgentSession | undefined
       >,
+  },
+  approval: {
+    list: (request) =>
+      ipcRenderer.invoke(ipcChannels.approvalList, request) as Promise<ApprovalRequestRecord[]>,
+    resolve: (request) =>
+      ipcRenderer.invoke(ipcChannels.approvalResolve, request) as Promise<ApprovalRequestRecord>,
   },
   git: {
     status: (request) =>

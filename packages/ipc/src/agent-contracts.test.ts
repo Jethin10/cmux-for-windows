@@ -7,6 +7,8 @@ import {
   assertAgentListRequest,
   assertAgentRestartRequest,
   assertAgentStopRequest,
+  assertApprovalListRequest,
+  assertApprovalResolveRequest,
   assertBrowserSurfaceOpenRequest,
   assertGitStatusRequest,
   assertNotificationListRequest,
@@ -56,6 +58,10 @@ describe("workspace and agent IPC request validation", () => {
       assertNotificationMarkReadRequest({ notificationId: "notification-1" }),
     ).not.toThrow();
     expect(() => assertNotificationNextUnreadRequest({ workspaceId: "workspace-1" })).not.toThrow();
+    expect(() => assertApprovalListRequest({ workspaceId: "workspace-1" })).not.toThrow();
+    expect(() =>
+      assertApprovalResolveRequest({ approvalId: "approval-1", status: "approved" }),
+    ).not.toThrow();
     expect(() => assertGitStatusRequest({ workspaceId: "workspace-1" })).not.toThrow();
     expect(() =>
       assertBrowserSurfaceOpenRequest({ workspaceId: "workspace-1", url: "https://example.com" }),
@@ -112,6 +118,10 @@ describe("workspace and agent IPC request validation", () => {
     expect(() => assertNotificationMarkReadRequest({ notificationId: "" })).toThrow(
       /notificationId/,
     );
+    expect(() => assertApprovalListRequest({ workspaceId: "" })).toThrow(/workspaceId/);
+    expect(() =>
+      assertApprovalResolveRequest({ approvalId: "approval-1", status: "pending" }),
+    ).toThrow(/status/);
     expect(() => assertGitStatusRequest({ workspaceId: "" })).toThrow(/workspaceId/);
     expect(() => assertBrowserSurfaceOpenRequest({ workspaceId: "workspace-1", url: "" })).toThrow(
       /url/,

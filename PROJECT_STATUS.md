@@ -135,7 +135,7 @@ Implemented:
 - approval request model/risk inference foundation
 - Git porcelain v2 status parsing and summary formatting foundation
 - Git status service, IPC/preload bridge, and dashboard refresh surface
-- browser URL safety helpers for future browser surfaces
+- browser URL safety helpers plus typed IPC/preload opening and dashboard browser pane rendering
 - native PTY smoke verification script and release hardening checklist
 
 Still required:
@@ -143,7 +143,7 @@ Still required:
 - pane split/move model beyond the current ordered surface list
 - richer batch launch presets and per-agent prompt editing
 - named-pipe transport and response streaming for CLI envelopes
-- UI and IPC surfaces for approval/browser features and richer Git actions
+- UI and IPC surfaces for approval features and richer Git/browser actions
 - packaged installer configuration and signed release pipeline
 
 Still required before Phase 1 can be considered passed:

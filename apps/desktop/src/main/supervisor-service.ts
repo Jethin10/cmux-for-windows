@@ -4,6 +4,7 @@ import {
   defaultTemplates,
   detectAgentAttention,
   closeSurface,
+  createBrowserSurface,
   findDefaultTemplate,
   focusSurface,
   openSurface,
@@ -231,6 +232,20 @@ export class SupervisorService {
     this.paneLayouts.set(workspaceId, layout);
     void this.persistSnapshot();
     return copyPaneLayout(layout);
+  }
+
+  openBrowserSurface(
+    workspaceId: WorkspaceId,
+    request: { url: string; title?: string },
+  ): PaneLayoutState {
+    this.requireWorkspace(workspaceId);
+    const browserSurface = createBrowserSurface(`browser:${randomUUID()}`, request);
+    return this.openPaneSurface(workspaceId, {
+      id: browserSurface.id,
+      kind: "browser",
+      title: browserSurface.title,
+      url: browserSurface.url,
+    });
   }
 
   closePaneSurface(workspaceId: WorkspaceId, surfaceId: string): PaneLayoutState {

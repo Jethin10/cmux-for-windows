@@ -29,6 +29,7 @@ export const ipcChannels = {
   notificationMarkRead: `${IPC_NAMESPACE}:notification:mark-read`,
   notificationNextUnread: `${IPC_NAMESPACE}:notification:next-unread`,
   gitStatus: `${IPC_NAMESPACE}:git:status`,
+  browserSurfaceOpen: `${IPC_NAMESPACE}:browser-surface:open`,
   paneLayoutGet: `${IPC_NAMESPACE}:pane-layout:get`,
   paneSurfaceOpen: `${IPC_NAMESPACE}:pane-surface:open`,
   paneSurfaceFocus: `${IPC_NAMESPACE}:pane-surface:focus`,
@@ -170,6 +171,12 @@ export interface GitStatusResponse {
   conflicted: number;
 }
 
+export interface BrowserSurfaceOpenRequest {
+  workspaceId: WorkspaceId;
+  url: string;
+  title?: string;
+}
+
 export interface PaneLayoutGetRequest {
   workspaceId: WorkspaceId;
 }
@@ -266,6 +273,10 @@ export interface IpcContracts {
     response: AgentSession | undefined;
   };
   [ipcChannels.gitStatus]: { request: GitStatusRequest; response: GitStatusResponse };
+  [ipcChannels.browserSurfaceOpen]: {
+    request: BrowserSurfaceOpenRequest;
+    response: PaneLayoutState;
+  };
   [ipcChannels.paneLayoutGet]: { request: PaneLayoutGetRequest; response: PaneLayoutState };
   [ipcChannels.paneSurfaceOpen]: { request: PaneSurfaceOpenRequest; response: PaneLayoutState };
   [ipcChannels.paneSurfaceFocus]: { request: PaneSurfaceFocusRequest; response: PaneLayoutState };
@@ -425,6 +436,18 @@ export function assertGitStatusRequest(value: unknown): asserts value is GitStat
   assertWorkspaceId(candidate.workspaceId, "git.status workspaceId");
 }
 
+export function assertBrowserSurfaceOpenRequest(
+  value: unknown,
+): asserts value is BrowserSurfaceOpenRequest {
+  if (!isRecord(value)) throw new Error("browserSurface.open request must be an object");
+  const candidate = value as Partial<BrowserSurfaceOpenRequest>;
+  assertWorkspaceId(candidate.workspaceId, "browserSurface.open workspaceId");
+  assertNonEmptyString(candidate.url, "browserSurface.open url");
+  if (candidate.title !== undefined && typeof candidate.title !== "string") {
+    throw new Error("browserSurface.open title must be a string");
+  }
+}
+
 export function assertPaneLayoutGetRequest(value: unknown): asserts value is PaneLayoutGetRequest {
   if (!isRecord(value)) throw new Error("paneLayout.get request must be an object");
   const candidate = value as Partial<PaneLayoutGetRequest>;
@@ -552,6 +575,9 @@ function assertPaneSurface(value: unknown, label: string): asserts value is Pane
   }
   if (candidate.terminalSessionId !== undefined) {
     assertTerminalSessionId(candidate.terminalSessionId, `${label} terminalSessionId`);
+  }
+  if (candidate.url !== undefined) {
+    assertNonEmptyString(candidate.url, `${label} url`);
   }
 }
 

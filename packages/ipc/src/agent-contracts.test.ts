@@ -7,6 +7,7 @@ import {
   assertAgentListRequest,
   assertAgentRestartRequest,
   assertAgentStopRequest,
+  assertBrowserSurfaceOpenRequest,
   assertGitStatusRequest,
   assertNotificationListRequest,
   assertNotificationMarkReadRequest,
@@ -56,6 +57,9 @@ describe("workspace and agent IPC request validation", () => {
     ).not.toThrow();
     expect(() => assertNotificationNextUnreadRequest({ workspaceId: "workspace-1" })).not.toThrow();
     expect(() => assertGitStatusRequest({ workspaceId: "workspace-1" })).not.toThrow();
+    expect(() =>
+      assertBrowserSurfaceOpenRequest({ workspaceId: "workspace-1", url: "https://example.com" }),
+    ).not.toThrow();
     expect(() => assertPaneLayoutGetRequest({ workspaceId: "workspace-1" })).not.toThrow();
     expect(() =>
       assertPaneSurfaceOpenRequest({
@@ -109,6 +113,9 @@ describe("workspace and agent IPC request validation", () => {
       /notificationId/,
     );
     expect(() => assertGitStatusRequest({ workspaceId: "" })).toThrow(/workspaceId/);
+    expect(() => assertBrowserSurfaceOpenRequest({ workspaceId: "workspace-1", url: "" })).toThrow(
+      /url/,
+    );
     expect(() => assertPaneLayoutGetRequest({ workspaceId: "" })).toThrow(/workspaceId/);
     expect(() =>
       assertPaneSurfaceOpenRequest({

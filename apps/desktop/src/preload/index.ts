@@ -10,6 +10,7 @@ import {
   type AgentRestartRequest,
   type AgentStopRequest,
   type AppInfoResponse,
+  type BrowserSurfaceOpenRequest,
   type GitStatusRequest,
   type GitStatusResponse,
   type NotificationListRequest,
@@ -65,6 +66,9 @@ export interface CmuxBridge {
   };
   git: {
     status(request: GitStatusRequest): Promise<GitStatusResponse>;
+  };
+  browser: {
+    openSurface(request: BrowserSurfaceOpenRequest): Promise<PaneLayoutState>;
   };
   paneLayout: {
     get(request: PaneLayoutGetRequest): Promise<PaneLayoutState>;
@@ -132,6 +136,10 @@ const bridge: CmuxBridge = {
   git: {
     status: (request) =>
       ipcRenderer.invoke(ipcChannels.gitStatus, request) as Promise<GitStatusResponse>,
+  },
+  browser: {
+    openSurface: (request) =>
+      ipcRenderer.invoke(ipcChannels.browserSurfaceOpen, request) as Promise<PaneLayoutState>,
   },
   paneLayout: {
     get: (request) =>

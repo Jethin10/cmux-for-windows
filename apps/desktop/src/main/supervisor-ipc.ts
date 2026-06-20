@@ -7,6 +7,7 @@ import {
   assertAgentListRequest,
   assertAgentRestartRequest,
   assertAgentStopRequest,
+  assertBrowserSurfaceOpenRequest,
   assertGitStatusRequest,
   assertNotificationListRequest,
   assertNotificationMarkReadRequest,
@@ -26,6 +27,7 @@ import {
   type AgentListRequest,
   type AgentRestartRequest,
   type AgentStopRequest,
+  type BrowserSurfaceOpenRequest,
   type GitStatusRequest,
   type NotificationListRequest,
   type NotificationMarkReadRequest,
@@ -130,6 +132,15 @@ export function registerSupervisorIpc(
     return gitService.getStatus(supervisor.getWorkspace((payload as GitStatusRequest).workspaceId));
   });
 
+  ipcMain.handle(ipcChannels.browserSurfaceOpen, async (_event, payload: unknown) => {
+    assertBrowserSurfaceOpenRequest(payload);
+    const request = payload as BrowserSurfaceOpenRequest;
+    return (await getSupervisorService()).openBrowserSurface(request.workspaceId, {
+      url: request.url,
+      ...(request.title ? { title: request.title } : {}),
+    });
+  });
+
   ipcMain.handle(ipcChannels.paneLayoutGet, async (_event, payload: unknown) => {
     assertPaneLayoutGetRequest(payload);
     return (await getSupervisorService()).getPaneLayout(
@@ -184,6 +195,7 @@ export function registerSupervisorIpc(
     ipcMain.removeHandler(ipcChannels.notificationMarkRead);
     ipcMain.removeHandler(ipcChannels.notificationNextUnread);
     ipcMain.removeHandler(ipcChannels.gitStatus);
+    ipcMain.removeHandler(ipcChannels.browserSurfaceOpen);
     ipcMain.removeHandler(ipcChannels.paneLayoutGet);
     ipcMain.removeHandler(ipcChannels.paneSurfaceOpen);
     ipcMain.removeHandler(ipcChannels.paneSurfaceFocus);

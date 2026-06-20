@@ -24,6 +24,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchResults, setSearchResults] = useState<TranscriptSearchResult[]>([]);
   const [gitStatus, setGitStatus] = useState<GitStatusResponse | undefined>();
+  const [browserUrl, setBrowserUrl] = useState<string>("https://example.com");
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [paneLayout, setPaneLayout] = useState<PaneLayoutState>({ surfaces: [] });
   const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>();
@@ -180,6 +181,33 @@ function App() {
           </button>
         </div>
         <p>{gitStatus?.summary ?? "Open a Git workspace and refresh status."}</p>
+      </section>
+
+      <section className="panel supervisor-panel">
+        <h2>Browser surface</h2>
+        <form
+          className="form-row"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!activeWorkspace || !browserUrl.trim()) return;
+            void runAction(async () => {
+              setPaneLayout(
+                await window.cmux.browser.openSurface({
+                  workspaceId: activeWorkspace.id,
+                  url: browserUrl,
+                }),
+              );
+            });
+          }}
+        >
+          <input
+            value={browserUrl}
+            onChange={(event) => setBrowserUrl(event.target.value)}
+            aria-label="Browser URL"
+            placeholder="https://example.com"
+          />
+          <button disabled={busy || !activeWorkspace || !browserUrl.trim()}>Open</button>
+        </form>
       </section>
 
       <section className="panel supervisor-panel">
@@ -561,7 +589,13 @@ function App() {
               ))}
             </div>
           ) : null}
-          {activeSurfaceAgent?.terminalSessionId ? (
+          {activeSurface?.kind === "browser" && activeSurface.url ? (
+            <iframe
+              className="browser-surface"
+              title={activeSurface.title}
+              src={activeSurface.url}
+            />
+          ) : activeSurfaceAgent?.terminalSessionId ? (
             <TerminalSurface
               key={activeSurfaceAgent.terminalSessionId}
               terminalSessionId={activeSurfaceAgent.terminalSessionId}

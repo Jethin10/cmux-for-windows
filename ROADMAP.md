@@ -60,6 +60,7 @@ Status: **started with panes/surfaces and CLI/API foundations**
 - Pane/surface model. Started with core pane layout helpers, backend-owned persisted layout state, typed IPC, and tests.
 - Agent terminal surfaces. Started with an attachable live xterm.js surface for selected agent sessions.
 - Multi-pane dashboard. Started with a local shell pane beside an agent session pane.
+- Multi-agent batch launch. Started with typed IPC/service support and a dashboard batch-launch control.
 - Renderer bundle hardening. Started with Vite manual chunks for React and xterm.
 - CLI/API entrypoint. Started with typed CLI command envelopes for workspace and agent operations.
 - Git workflow foundation. Started with porcelain v2 status parsing and summary formatting.

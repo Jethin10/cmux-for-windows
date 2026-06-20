@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   assertAgentArchiveRequest,
+  assertAgentBatchLaunchRequest,
   assertAgentHistoryRequest,
   assertAgentLaunchRequest,
   assertAgentListRequest,
@@ -28,6 +29,15 @@ describe("workspace and agent IPC request validation", () => {
         templateId: "template-pi",
         title: "Pi in repo",
         prompt: "fix tests",
+      }),
+    ).not.toThrow();
+    expect(() =>
+      assertAgentBatchLaunchRequest({
+        workspaceId: "workspace-1",
+        launches: [
+          { templateId: "template-pi", title: "Pi 1", prompt: "fix tests" },
+          { templateId: "template-codex", title: "Codex 1" },
+        ],
       }),
     ).not.toThrow();
     expect(() =>
@@ -70,6 +80,15 @@ describe("workspace and agent IPC request validation", () => {
     expect(() =>
       assertAgentLaunchRequest({ workspaceId: "workspace-1", templateId: "", title: "x" }),
     ).toThrow(/templateId/);
+    expect(() =>
+      assertAgentBatchLaunchRequest({ workspaceId: "workspace-1", launches: [] }),
+    ).toThrow(/launches/);
+    expect(() =>
+      assertAgentBatchLaunchRequest({
+        workspaceId: "workspace-1",
+        launches: [{ templateId: "template-pi", title: "" }],
+      }),
+    ).toThrow(/title/);
     expect(() => assertAgentStopRequest({ agentSessionId: "agent-1", mode: "detach" })).toThrow(
       /mode/,
     );

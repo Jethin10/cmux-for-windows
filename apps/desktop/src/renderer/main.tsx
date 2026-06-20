@@ -21,6 +21,7 @@ function App() {
   const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>();
   const [templateId, setTemplateId] = useState<string>(String(defaultTemplates[0]?.id ?? ""));
   const [agentTitle, setAgentTitle] = useState<string>("Pi in repo");
+  const [batchCount, setBatchCount] = useState<number>(3);
   const [prompt, setPrompt] = useState<string>("Review the repository and summarize next steps.");
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
@@ -166,6 +167,16 @@ function App() {
             Title
             <input value={agentTitle} onChange={(event) => setAgentTitle(event.target.value)} />
           </label>
+          <label>
+            Batch count
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={batchCount}
+              onChange={(event) => setBatchCount(Number(event.target.value))}
+            />
+          </label>
           <label className="prompt-field">
             Prompt
             <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} rows={4} />
@@ -189,6 +200,32 @@ function App() {
             }}
           >
             Launch
+          </button>
+          <button
+            disabled={busy || !activeWorkspace || batchCount < 1 || batchCount > 20}
+            onClick={() => {
+              if (!activeWorkspace) return;
+              void runAction(async () => {
+                const response = await window.cmux.agent.batchLaunch({
+                  workspaceId: activeWorkspace.id,
+                  launches: Array.from({ length: batchCount }, (_, index) => ({
+                    templateId,
+                    title: `${agentTitle} #${index + 1}`,
+                    prompt,
+                  })),
+                });
+                if (response.failures.length > 0) {
+                  setError(
+                    `Launched ${response.agents.length}; ${response.failures.length} failed: ${response.failures
+                      .map((failure) => failure.error)
+                      .join(", ")}`,
+                  );
+                }
+                await refreshAgents(activeWorkspace.id);
+              });
+            }}
+          >
+            Launch batch
           </button>
         </div>
       </section>

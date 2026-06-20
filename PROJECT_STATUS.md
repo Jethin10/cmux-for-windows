@@ -129,6 +129,7 @@ Implemented:
 - two-pane dashboard area with local shell spike and selected agent session pane
 - Vite manual chunks for React and xterm renderer bundle splitting
 - typed CLI command envelopes for workspace open, agent list/launch/stop
+- multi-agent batch launch IPC/service flow and dashboard control
 - approval request model/risk inference foundation
 - Git porcelain v2 status parsing and summary formatting foundation
 - browser URL safety helpers for future browser surfaces
@@ -137,7 +138,7 @@ Implemented:
 Still required:
 
 - richer UI controls for moving/reordering/splitting persisted pane surfaces
-- multi-agent batch launch workflows
+- richer batch launch presets and per-agent prompt editing
 - desktop bridge or named-pipe transport for executing CLI envelopes
 - UI and IPC surfaces for Git workflow/approval/browser features
 - packaged installer configuration and signed release pipeline

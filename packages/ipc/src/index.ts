@@ -32,6 +32,7 @@ export const ipcChannels = {
   paneSurfaceOpen: `${IPC_NAMESPACE}:pane-surface:open`,
   paneSurfaceFocus: `${IPC_NAMESPACE}:pane-surface:focus`,
   paneSurfaceClose: `${IPC_NAMESPACE}:pane-surface:close`,
+  paneSurfaceReorder: `${IPC_NAMESPACE}:pane-surface:reorder`,
   terminalCreate: `${IPC_NAMESPACE}:terminal:create`,
   terminalWrite: `${IPC_NAMESPACE}:terminal:write`,
   terminalResize: `${IPC_NAMESPACE}:terminal:resize`,
@@ -152,6 +153,14 @@ export interface PaneSurfaceCloseRequest {
   surfaceId: string;
 }
 
+export interface PaneSurfaceReorderRequest {
+  workspaceId: WorkspaceId;
+  surfaceId: string;
+  beforeSurfaceId?: string;
+  afterSurfaceId?: string;
+  focus?: boolean;
+}
+
 export type TerminalCloseMode = "interrupt" | "terminate" | "kill-process-tree" | "detach";
 
 export interface TerminalCreateRequest {
@@ -224,6 +233,10 @@ export interface IpcContracts {
   [ipcChannels.paneSurfaceOpen]: { request: PaneSurfaceOpenRequest; response: PaneLayoutState };
   [ipcChannels.paneSurfaceFocus]: { request: PaneSurfaceFocusRequest; response: PaneLayoutState };
   [ipcChannels.paneSurfaceClose]: { request: PaneSurfaceCloseRequest; response: PaneLayoutState };
+  [ipcChannels.paneSurfaceReorder]: {
+    request: PaneSurfaceReorderRequest;
+    response: PaneLayoutState;
+  };
   [ipcChannels.terminalCreate]: { request: TerminalCreateRequest; response: TerminalSession };
   [ipcChannels.terminalWrite]: { request: TerminalWriteRequest; response: void };
   [ipcChannels.terminalResize]: { request: TerminalResizeRequest; response: void };
@@ -400,6 +413,27 @@ export function assertPaneSurfaceCloseRequest(
   const candidate = value as Partial<PaneSurfaceCloseRequest>;
   assertWorkspaceId(candidate.workspaceId, "paneSurface.close workspaceId");
   assertNonEmptyString(candidate.surfaceId, "paneSurface.close surfaceId");
+}
+
+export function assertPaneSurfaceReorderRequest(
+  value: unknown,
+): asserts value is PaneSurfaceReorderRequest {
+  if (!isRecord(value)) throw new Error("paneSurface.reorder request must be an object");
+  const candidate = value as Partial<PaneSurfaceReorderRequest>;
+  assertWorkspaceId(candidate.workspaceId, "paneSurface.reorder workspaceId");
+  assertNonEmptyString(candidate.surfaceId, "paneSurface.reorder surfaceId");
+  if (candidate.beforeSurfaceId !== undefined) {
+    assertNonEmptyString(candidate.beforeSurfaceId, "paneSurface.reorder beforeSurfaceId");
+  }
+  if (candidate.afterSurfaceId !== undefined) {
+    assertNonEmptyString(candidate.afterSurfaceId, "paneSurface.reorder afterSurfaceId");
+  }
+  if (candidate.beforeSurfaceId !== undefined && candidate.afterSurfaceId !== undefined) {
+    throw new Error("paneSurface.reorder cannot specify both beforeSurfaceId and afterSurfaceId");
+  }
+  if (candidate.focus !== undefined && typeof candidate.focus !== "boolean") {
+    throw new Error("paneSurface.reorder focus must be boolean");
+  }
 }
 
 export function assertTerminalCreateRequest(

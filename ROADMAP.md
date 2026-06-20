@@ -57,7 +57,7 @@ Status: **started with heuristic notifications**
 
 Status: **started with panes/surfaces and CLI/API foundations**
 
-- Pane/surface model. Started with core pane layout helpers, backend-owned persisted layout state, typed IPC, and tests.
+- Pane/surface model. Started with core pane layout helpers, backend-owned persisted layout state, typed IPC, focus-neutral reorder/close controls, and tests.
 - Agent terminal surfaces. Started with an attachable live xterm.js surface for selected agent sessions.
 - Multi-pane dashboard. Started with a local shell pane beside an agent session pane.
 - Multi-agent batch launch. Started with typed IPC/service support and a dashboard batch-launch control.

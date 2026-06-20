@@ -17,6 +17,7 @@ import {
   type PaneSurfaceCloseRequest,
   type PaneSurfaceFocusRequest,
   type PaneSurfaceOpenRequest,
+  type PaneSurfaceReorderRequest,
   type TerminalCloseRequest,
   type TerminalCreateRequest,
   type TerminalExitEvent,
@@ -65,6 +66,7 @@ export interface CmuxBridge {
     openSurface(request: PaneSurfaceOpenRequest): Promise<PaneLayoutState>;
     focusSurface(request: PaneSurfaceFocusRequest): Promise<PaneLayoutState>;
     closeSurface(request: PaneSurfaceCloseRequest): Promise<PaneLayoutState>;
+    reorderSurface(request: PaneSurfaceReorderRequest): Promise<PaneLayoutState>;
   };
   terminal: {
     create(request: TerminalCreateRequest): Promise<TerminalSession>;
@@ -131,6 +133,8 @@ const bridge: CmuxBridge = {
       ipcRenderer.invoke(ipcChannels.paneSurfaceFocus, request) as Promise<PaneLayoutState>,
     closeSurface: (request) =>
       ipcRenderer.invoke(ipcChannels.paneSurfaceClose, request) as Promise<PaneLayoutState>,
+    reorderSurface: (request) =>
+      ipcRenderer.invoke(ipcChannels.paneSurfaceReorder, request) as Promise<PaneLayoutState>,
   },
   terminal: {
     create: (request) =>

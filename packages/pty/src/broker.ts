@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import type {
   AgentSessionId,
@@ -238,8 +238,153 @@ export class NodePtyBroker implements PtyBroker {
   }
 }
 
-export async function createNodePtyBroker(): Promise<NodePtyBroker> {
-  return NodePtyBroker.load();
+export class ChildProcessBroker implements PtyBroker {
+  private readonly terminals = new Map<TerminalSessionId, RuntimeChildProcessTerminal>();
+
+  async createTerminal(request: CreateTerminalRequest): Promise<TerminalSession> {
+    assertValidTerminalSize(request.cols, request.rows);
+    const terminalId = randomUUID() as TerminalSessionId;
+    const startedAt = nowIso();
+    const child = spawn(request.command, request.args, {
+      cwd: request.cwd,
+      env: process.env,
+      windowsHide: false,
+      stdio: "pipe",
+    });
+
+    const session: TerminalSession = {
+      id: terminalId,
+      workspaceId: request.workspaceId as WorkspaceId,
+      ...(request.agentSessionId
+        ? { agentSessionId: request.agentSessionId as AgentSessionId }
+        : {}),
+      profileId: request.profileId,
+      command: request.command,
+      argsJson: JSON.stringify(request.args),
+      cwd: request.cwd,
+      cols: request.cols,
+      rows: request.rows,
+      status: "running",
+      ...(child.pid ? { pid: child.pid } : {}),
+      startedAt,
+    };
+
+    const runtime: RuntimeChildProcessTerminal = {
+      process: child,
+      request,
+      session,
+      outputSequence: 0,
+      outputSubscriptions: new Set(),
+      exitSubscriptions: new Set(),
+    };
+    this.terminals.set(terminalId, runtime);
+
+    const emitOutput = (data: Buffer): void => {
+      runtime.outputSequence += 1;
+      const event: TerminalOutputEvent = {
+        terminalSessionId: terminalId,
+        sequence: runtime.outputSequence,
+        data: data.toString("utf8"),
+      };
+      for (const handler of runtime.outputSubscriptions) handler(event);
+    };
+
+    child.stdout.on("data", emitOutput);
+    child.stderr.on("data", emitOutput);
+    child.once("error", (error) =>
+      emitOutput(Buffer.from(`\r\n[process error] ${error.message}\r\n`)),
+    );
+    child.once("exit", (exitCode, signal) => {
+      const nextStatus = exitCode === 0 || exitCode === null ? "exited" : "crashed";
+      runtime.session = {
+        ...runtime.session,
+        status: nextStatus,
+        ...(typeof exitCode === "number" ? { exitCode } : {}),
+        endedAt: nowIso(),
+      };
+      const event: TerminalExitEvent = {
+        terminalSessionId: terminalId,
+        ...(typeof exitCode === "number" ? { exitCode } : {}),
+        ...(signal ? { signal: signalToNumber(signal) } : {}),
+      };
+      for (const handler of runtime.exitSubscriptions) handler(event);
+    });
+
+    return session;
+  }
+
+  async writeTerminal(terminalId: TerminalSessionId, data: string): Promise<void> {
+    const runtime = this.requireRuntime(terminalId);
+    if (data === "\u0003") {
+      runtime.process.kill("SIGINT");
+      return;
+    }
+    runtime.process.stdin.write(data);
+  }
+
+  async resizeTerminal(_terminalId: TerminalSessionId, cols: number, rows: number): Promise<void> {
+    assertValidTerminalSize(cols, rows);
+  }
+
+  async closeTerminal(terminalId: TerminalSessionId, mode: TerminalCloseMode): Promise<void> {
+    const runtime = this.requireRuntime(terminalId);
+    if (mode === "detach") return;
+    runtime.session = { ...runtime.session, status: "closing" };
+    runtime.process.kill(mode === "interrupt" ? "SIGINT" : undefined);
+  }
+
+  async restartTerminal(terminalId: TerminalSessionId): Promise<TerminalSession> {
+    const runtime = this.requireRuntime(terminalId);
+    const request = runtime.request;
+    await this.closeTerminal(terminalId, "terminate");
+    this.terminals.delete(terminalId);
+    return this.createTerminal(request);
+  }
+
+  subscribeOutput(
+    terminalId: TerminalSessionId,
+    handler: TerminalOutputHandler,
+  ): TerminalSubscription {
+    const runtime = this.requireRuntime(terminalId);
+    runtime.outputSubscriptions.add(handler);
+    return { dispose: () => runtime.outputSubscriptions.delete(handler) };
+  }
+
+  subscribeExit(terminalId: TerminalSessionId, handler: TerminalExitHandler): TerminalSubscription {
+    const runtime = this.requireRuntime(terminalId);
+    runtime.exitSubscriptions.add(handler);
+    return { dispose: () => runtime.exitSubscriptions.delete(handler) };
+  }
+
+  private requireRuntime(terminalId: TerminalSessionId): RuntimeChildProcessTerminal {
+    const runtime = this.terminals.get(terminalId);
+    if (!runtime) throw new Error(`Unknown terminal session: ${terminalId}`);
+    return runtime;
+  }
+}
+
+interface RuntimeChildProcessTerminal {
+  process: ChildProcessWithoutNullStreams;
+  request: CreateTerminalRequest;
+  session: TerminalSession;
+  outputSequence: number;
+  outputSubscriptions: Set<TerminalOutputHandler>;
+  exitSubscriptions: Set<TerminalExitHandler>;
+}
+
+export async function createNodePtyBroker(): Promise<PtyBroker> {
+  try {
+    return await NodePtyBroker.load();
+  } catch (error) {
+    console.warn(
+      `${error instanceof Error ? error.message : String(error)} Falling back to child_process shell mode; terminal emulation features will be limited until node-pty is rebuilt for Electron.`,
+    );
+    return new ChildProcessBroker();
+  }
+}
+
+function signalToNumber(signal: NodeJS.Signals): number {
+  return signal === "SIGINT" ? 2 : signal === "SIGTERM" ? 15 : 1;
 }
 
 function classifyExitStatus(event: { exitCode?: number; signal?: number }): "exited" | "crashed" {

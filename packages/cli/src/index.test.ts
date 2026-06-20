@@ -1,5 +1,20 @@
-import { describe, expect, it } from "vitest";
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
 import { run } from "./index.js";
+
+const tempDirs: string[] = [];
+
+afterEach(async () => {
+  await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
+});
+
+async function createTempDir(): Promise<string> {
+  const dir = await mkdtemp(join(tmpdir(), "cmux-cli-"));
+  tempDirs.push(dir);
+  return dir;
+}
 
 describe("cmux CLI", () => {
   it("prints help", () => {
@@ -42,6 +57,22 @@ describe("cmux CLI", () => {
         title: "Pi",
         prompt: "fix tests",
       },
+    });
+  });
+
+  it("queues envelopes to a desktop bridge inbox", async () => {
+    const inbox = await createTempDir();
+    const result = run(["workspace", "open", "--path", "C:/repo", "--inbox", inbox]);
+
+    expect(result).toMatchObject({
+      exitCode: 0,
+      stdout: expect.stringContaining("Queued command"),
+    });
+    const [file] = await readdir(inbox);
+    const queued = JSON.parse(await readFile(join(inbox, file!), "utf8"));
+    expect(queued).toMatchObject({
+      id: expect.any(String),
+      envelope: { command: "workspace.open", payload: { rootPath: "C:/repo" } },
     });
   });
 

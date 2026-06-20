@@ -100,6 +100,25 @@ export interface AgentStopRequest {
   mode: "interrupt" | "terminate" | "kill-process-tree";
 }
 
+export type CliCommandEnvelope =
+  | { command: "workspace.open"; payload: WorkspaceOpenRequest }
+  | { command: "agent.list"; payload: AgentListRequest }
+  | { command: "agent.launch"; payload: AgentLaunchRequest }
+  | { command: "agent.batchLaunch"; payload: AgentBatchLaunchRequest }
+  | { command: "agent.stop"; payload: AgentStopRequest };
+
+export interface CliCommandSuccess {
+  ok: true;
+  data: unknown;
+}
+
+export interface CliCommandFailure {
+  ok: false;
+  error: string;
+}
+
+export type CliCommandResult = CliCommandSuccess | CliCommandFailure;
+
 export interface AgentRestartRequest {
   agentSessionId: AgentSessionId;
 }
